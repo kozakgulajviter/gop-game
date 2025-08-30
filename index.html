@@ -1,116 +1,370 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>Гра ГОП — Захисники України</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ГОП — Classic + Naval (v3)</title>
+  <meta name="description" content="Демо‑гра ГОП з двома режимами: Classic (наземний) і Naval (морський з кораблями)." />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: linear-gradient(to bottom right, #fefcea, #f1da36);
-      text-align: center;
-    }
-    header {
-      background-color: #003366;
-      color: white;
-      padding: 20px;
-    }
-    #board {
-      display: grid;
-      grid-template-columns: repeat(6, 60px);
-      grid-template-rows: repeat(6, 60px);
-      gap: 5px;
-      justify-content: center;
-      margin: 20px auto;
-    }
-    .cell {
-      width: 60px;
-      height: 60px;
-      background: white;
-      border: 1px solid #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .enemy {
-      background: black;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-    }
-    #score, #dice {
-      font-size: 18px;
-      margin: 10px;
-    }
-    #controls {
-      margin: 15px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-      border: none;
-      border-radius: 5px;
-      background-color: #c8102e;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #a00;
-    }
+    :root{ --bg:#f6f1e7; --ink:#111; --ui:#fff; --line:#dcd4c2; --gap:6px; --r:14px;
+           --a1:#ffd500; --a2:#ff2a6d; --a3:#005bbb; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink)}
+    .wrap{max-width:1100px; margin:0 auto; padding:20px}
+    header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    h1{margin:0; font-size:clamp(20px,3.6vw,34px)}
+    .ribbon{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .btn{appearance:none; border:1px solid var(--line); background:#fff; padding:10px 16px; border-radius:var(--r); cursor:pointer; font-weight:600}
+    .btn.primary{border-color:transparent; background:linear-gradient(135deg, var(--a3), var(--a2)); color:#fff}
+    .btn.warn{border-color:transparent; background:linear-gradient(135deg, var(--a2), #c2185b); color:#fff}
+    .btn.ghost{background:transparent}
+    .card{background:var(--ui); border:1px solid var(--line); border-radius:var(--r); padding:12px}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .panel{display:grid; grid-template-columns:1fr; gap:12px; margin:12px 0 18px}
+    @media(min-width:780px){.panel{grid-template-columns:1fr auto}}
+    .stats{display:flex; gap:10px; flex-wrap:wrap}
+    .badge{background:#fff; border:1px solid var(--line); padding:8px 12px; border-radius:999px}
+
+    /* Поле */
+    #board{display:grid; gap:var(--gap); align-items:center; justify-items:center}
+    .cell{width:100%; aspect-ratio:1/1; border-radius:10px; border:1px solid var(--line); background:#faf8f3; position:relative}
+    .cell.token::after{content:""; position:absolute; inset:18%; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.6), rgba(0,0,0,.15)), var(--a3)}
+    .cell.obstacle{background:#eee; border-style:dashed}
+    .cell.base{outline:2px solid var(--a1)}
+    .cell.cursor{box-shadow:0 0 0 3px var(--a2) inset}
+
+    /* Naval ships visuals */
+    .cell.ship{background:#e7f1ff}
+    .cell.ship.hit{background:#ffdde5}
+    .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px}
+    .lg{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--line); border-radius:999px; background:#fff}
+    .dot{width:12px; height:12px; border-radius:3px; background:#e7f1ff; border:1px solid #b5ccef}
+    .dot.hit{background:#ffdde5; border-color:#ff8aa1}
+
+    #log{margin-top:10px; font-size:14px}
+    footer{margin-top:18px; font-size:13px; color:#555}
+    kbd{background:#eee;border:1px solid #ccc;border-bottom-width:2px;padding:1px 6px;border-radius:6px}
+    select,input[type=range]{padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#fff}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Національно-Патріотична Гра «ГОП»</h1>
-    <p>Звільни українську землю від зла!</p>
-  </header>
+  <div class="wrap">
+    <header>
+      <h1>ГОП — Classic + Naval</h1>
+      <div class="ribbon">
+        <button class="btn primary" id="btn-roll">Кинути кубики</button>
+        <button class="btn" id="btn-next">Наступний рівень</button>
+        <button class="btn warn" id="btn-reset">Нова битва</button>
+        <button class="btn ghost" id="btn-help">Правила</button>
+      </div>
+    </header>
 
-  <div id="controls">
-    <button onclick="rollDice()">Кинути кубики</button>
-    <button onclick="startGame()">Нова гра</button>
+    <div class="panel">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div class="stats">
+            <span class="badge">Режим: 
+              <select id="mode">
+                <option value="classic" selected>Classic</option>
+                <option value="naval">Naval (морський)</option>
+              </select>
+            </span>
+            <span class="badge">Рівень: <strong id="level">1</strong></span>
+            <span class="badge">Поле: <strong id="sizeLabel">10×10</strong></span>
+            <span class="badge" id="enemyBadge">Ворог: <strong id="densityLabel">30%</strong></span>
+            <span class="badge" id="shipBadge" style="display:none;">Кораблі: <strong id="shipLabel">22 клітин</strong></span>
+            <span class="badge">Перешкоди: <strong id="obstLabel">8%</strong></span>
+            <span class="badge">Кидок: <strong id="dice">–</strong></span>
+            <span class="badge">Кроки: <strong id="moves">0</strong></span>
+            <span class="badge">Очки: <strong id="score">0</strong></span>
+            <span class="badge">Час: <strong id="time">0:00</strong></span>
+          </div>
+          <div class="row">
+            <label>Розмір</label>
+            <select id="size">
+              <option value="8">8×8</option>
+              <option value="10" selected>10×10</option>
+              <option value="12">12×12</option>
+              <option value="14">14×14</option>
+            </select>
+            <label id="lblDensity">Ворог</label>
+            <input id="density" type="range" min="10" max="60" step="2" value="30" />
+            <label>Перешкоди</label>
+            <input id="obstacles" type="range" min="0" max="30" step="2" value="8" />
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="legend"><span class="lg"><span class="dot"></span>корабель</span><span class="lg"><span class="dot hit"></span>пошкоджено</span></div>
+      </div>
+    </div>
+
+    <div id="board" aria-label="Поле"></div>
+    <div id="log"></div>
+
+    <footer>
+      Classic: очищай фішки ворога (сусідня атака). Naval: знищуй кораблі; дальність удару = сума кубиків (Манхеттен), дубль дає +2 кроки і +5 очок.
+      Клавіатура: <kbd>↑↓←→</kbd> — рух; <kbd>Enter</kbd>/<kbd>Space</kbd> — атака; <kbd>R</kbd> — кидок; <kbd>N</kbd> — нова; <kbd>L</kbd> — рівень; <kbd>H</kbd> — правила.
+    </footer>
   </div>
-  <div id="dice">🎲 Кубики: </div>
-  <div id="score">Звільнено секторів: 0</div>
-  <div id="board"></div>
 
   <script>
-    const board = document.getElementById("board");
-    const dice = document.getElementById("dice");
-    const score = document.getElementById("score");
-    let totalScore = 0;
+  (function(){
+    let mode = 'classic';
+    let gridSize = 10;
+    let density = 30;
+    let obst = 8;
+    let level = 1;
+    let score = 0;
+    let movesLeft = 0;
+    let seconds = 0; let timerId=null;
+    let cursor = 0;
 
-    function startGame() {
-      board.innerHTML = "";
-      totalScore = 0;
-      score.textContent = "Звільнено секторів: 0";
-      dice.textContent = "🎲 Кубики: ";
-      for (let i = 0; i < 36; i++) {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
-        const enemy = document.createElement("div");
-        enemy.classList.add("enemy");
-        cell.appendChild(enemy);
-        cell.addEventListener("click", () => {
-          if (enemy.parentElement) {
-            cell.removeChild(enemy);
-            totalScore++;
-            score.textContent = "Звільнено секторів: " + totalScore;
+    // Naval specific
+    let ships = [];      // array of ship cells (Set)
+    let shipCells = new Set(); // union of all ship cells (for quick check)
+    const NAVAL_FLEET = [4,3,3,2,2,2,1,1,1,1]; // ~22 клітин (аналог морського бою)
+
+    const ui = {
+      board: document.getElementById('board'),
+      level: document.getElementById('level'),
+      sizeSel: document.getElementById('size'),
+      densRange: document.getElementById('density'),
+      obstRange: document.getElementById('obstacles'),
+      sizeLabel: document.getElementById('sizeLabel'),
+      densityLabel: document.getElementById('densityLabel'),
+      obstLabel: document.getElementById('obstLabel'),
+      shipLabel: document.getElementById('shipLabel'),
+      dice: document.getElementById('dice'),
+      moves: document.getElementById('moves'),
+      score: document.getElementById('score'),
+      time: document.getElementById('time'),
+      log: document.getElementById('log'),
+      btnRoll: document.getElementById('btn-roll'),
+      btnNext: document.getElementById('btn-next'),
+      btnReset: document.getElementById('btn-reset'),
+      btnHelp: document.getElementById('btn-help'),
+      modeSel: document.getElementById('mode'),
+      enemyBadge: document.getElementById('enemyBadge'),
+      shipBadge: document.getElementById('shipBadge'),
+      lblDensity: document.getElementById('lblDensity'),
+    };
+
+    function rnd(n){ return Math.floor(Math.random()*n); }
+    function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]] } }
+    function formatTime(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
+
+    function startTimer(){ stopTimer(); timerId=setInterval(()=>{ seconds++; ui.time.textContent=formatTime(seconds); },1000); }
+    function stopTimer(){ if (timerId) clearInterval(timerId); timerId=null; }
+
+    function buildBoard(){
+      ui.board.innerHTML='';
+      ui.board.style.gridTemplateColumns = `repeat(${gridSize}, minmax(22px,1fr))`;
+      const total = gridSize*gridSize;
+
+      const all = Array.from({length: total}, (_,i)=>i);
+      shuffle(all);
+      const baseIndex = all.pop();
+      cursor = baseIndex;
+
+      const obstCount = Math.round(total * (obst/100));
+      const obstSet = new Set(all.splice(0, obstCount));
+
+      let enemySet = new Set();
+      shipCells.clear(); ships = [];
+
+      if (mode==='classic'){
+        const enemiesCount = Math.round(total * (density/100));
+        enemySet = new Set(all.splice(0, enemiesCount));
+      } else {
+        // Place NAVAL_FLEET ships without overlap or adjacency (simple version: avoid overlap; allow adjacency diagonal)
+        const free = new Set(all);
+        const placed = [];
+        for (const len of NAVAL_FLEET){
+          let placedShip = null;
+          for (let tries=0; tries<200; tries++){
+            const horiz = Math.random()<0.5;
+            const x0 = rnd(gridSize - (horiz?len:0));
+            const y0 = rnd(gridSize - (horiz?0:len));
+            const cells = [];
+            let ok = true;
+            for (let k=0;k<len;k++){
+              const x = x0 + (horiz?k:0);
+              const y = y0 + (horiz?0:k);
+              const idx = y*gridSize + x;
+              if (!free.has(idx) || obstSet.has(idx)) { ok=false; break; }
+              cells.push(idx);
+            }
+            if (!ok) continue;
+            // mark occupied
+            for (const c of cells) free.delete(c);
+            placedShip = new Set(cells);
+            break;
           }
-        });
-        board.appendChild(cell);
+          if (placedShip){ placed.push(placedShip); for (const c of placedShip) shipCells.add(c); }
+        }
+        ships = placed;
+      }
+
+      for (let i=0;i<total;i++){
+        const el = document.createElement('div');
+        let cls = 'cell';
+        if (obstSet.has(i)) cls+=' obstacle';
+        if (mode==='classic' && enemySet.has(i)) cls+=' token';
+        if (mode==='naval' && shipCells.has(i)) cls+=' ship';
+        if (i===baseIndex) cls+=' base';
+        el.className = cls;
+        el.dataset.i = i;
+        ui.board.appendChild(el);
+      }
+      paintCursor();
+      ui.log.textContent='';
+      if (mode==='naval') ui.shipLabel.textContent = `${shipCells.size} клітин`; 
+    }
+
+    function paintCursor(){
+      ui.board.querySelectorAll('.cell.cursor').forEach(n=>n.classList.remove('cursor'));
+      const node = ui.board.children[cursor];
+      if (node) node.classList.add('cursor');
+    }
+
+    function move(dx){
+      if (movesLeft<=0) return;
+      const x = cursor % gridSize; const y = Math.floor(cursor / gridSize);
+      let nx=x, ny=y;
+      if (dx===1) nx=x+1; if (dx===-1) nx=x-1; if (dx==='u') ny=y-1; if (dx==='d') ny=y+1;
+      if (nx<0||ny<0||nx>=gridSize||ny>=gridSize) return;
+      const ni = ny*gridSize + nx;
+      const cell = ui.board.children[ni];
+      if (cell.classList.contains('obstacle')) return;
+      cursor = ni; movesLeft--; ui.moves.textContent=String(movesLeft);
+      paintCursor();
+    }
+
+    function rollDice(){
+      const a = 1+rnd(6), b = 1+rnd(6); const v=a+b;
+      ui.dice.textContent = `${a} + ${b} = ${v}`;
+      movesLeft += v;
+      if (a===b){ movesLeft += 2; score += 5; ui.score.textContent=String(score); ui.log.textContent='Дубль! +2 кроки, +5 очок.'; }
+      ui.moves.textContent=String(movesLeft);
+    }
+
+    function attack(){
+      const i = cursor;
+      if (mode==='classic'){
+        const cell = ui.board.children[i];
+        let destroyed = false;
+        if (cell.classList.contains('token')){ cell.classList.remove('token'); destroyed=true; }
+        else {
+          for (const j of neighbors(i)){
+            const c = ui.board.children[j];
+            if (c && c.classList.contains('token')){ c.classList.remove('token'); destroyed=true; break; }
+          }
+        }
+        if (destroyed){ score++; ui.score.textContent=String(score); checkWin(); }
+      } else {
+        // Naval: ranged attack — can strike any target within distance <= lastDice (approximated by moves gained last roll)
+        // Simplify: distance budget = current movesLeft (use at most sum rolled so far). We'll allow single strike if within <= 6 (typical roll); else need to roll again.
+        const maxRange = Math.min(movesLeft, 12); // cap
+        let bestHit = -1, bestDist = 1e9;
+        for (const s of shipCells){
+          const d = manhattan(i, s);
+          if (d<=maxRange && d<bestDist){ bestDist=d; bestHit=s; }
+        }
+        if (bestHit>=0){
+          const c = ui.board.children[bestHit];
+          if (c && c.classList.contains('ship')){
+            c.classList.remove('ship'); c.classList.add('hit');
+            shipCells.delete(bestHit);
+            score += 2; // корабель цінніший
+            ui.score.textContent=String(score);
+            ui.log.textContent = `Влучив по кораблю на відстані ${bestDist}.`;
+            if (shipCells.size===0){
+              ui.log.textContent = 'Флот ворога знищено. Перемога! Тисни «Наступний рівень».';
+              stopTimer();
+            } else {
+              ui.shipLabel.textContent = `${shipCells.size} клітин`;
+            }
+          }
+        } else {
+          ui.log.textContent = 'Нема цілей у досяжності. Кинь кубики (R) або підходь ближче.';
+        }
       }
     }
 
-    function rollDice() {
-      const d1 = Math.ceil(Math.random() * 6);
-      const d2 = Math.ceil(Math.random() * 6);
-      dice.textContent = `🎲 Кубики: ${d1} і ${d2}` + (d1 === d2 ? " — Козацька Удача!" : "");
+    function neighbors(i){
+      const x=i%gridSize, y=Math.floor(i/gridSize); const r=[];
+      if (x>0) r.push(i-1); if (x<gridSize-1) r.push(i+1); if (y>0) r.push(i-gridSize); if (y<gridSize-1) r.push(i+gridSize);
+      return r;
+    }
+    function manhattan(a,b){ const ax=a%gridSize, ay=Math.floor(a/gridSize); const bx=b%gridSize, by=Math.floor(b/gridSize); return Math.abs(ax-bx)+Math.abs(ay-by); }
+
+    function nextLevel(){
+      level++; ui.level.textContent=String(level);
+      // scale difficulty
+      gridSize = Math.min(14, gridSize + (level%2?0:2));
+      if (mode==='classic'){ density = Math.min(60, Math.round(density + 3)); }
+      obst = Math.min(30, Math.round(obst + (level%3?1:2)));
+      syncControls();
+      seconds=0; ui.time.textContent='0:00';
+      movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
+      buildBoard();
     }
 
-    startGame();
+    function resetGame(){
+      level=1; score=0; seconds=0; ui.score.textContent='0'; ui.time.textContent='0:00'; ui.level.textContent='1'; ui.dice.textContent='–';
+      gridSize = Number(ui.sizeSel.value||10);
+      density = Number(ui.densRange.value||30);
+      obst    = Number(ui.obstRange.value||8);
+      movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
+      buildBoard(); startTimer();
+      ui.log.textContent='';
+    }
+
+    function baseMoveLimit(){ return gridSize + 5*level; }
+
+    function showHelp(){
+      alert(`ГОП v3\\n\\nРежими:\\n- Classic: очищай сусідні фішки ворога.\\n- Naval: знищуй кораблі (22 клітин). Удар можливий по цілі в межах Манхеттен-відстані <= сумі останніх кидків (поточні кроки). Дубль: +2 кроки, +5 очок.\\nКлавіатура: стрілки — рух; Enter/Space — атака; R — кидок; N — нова; L — рівень; H — правила.`);
+    }
+
+    // UI bindings
+    ui.sizeSel.addEventListener('change', ()=>{ gridSize=Number(ui.sizeSel.value); ui.sizeLabel.textContent=`${gridSize}×${gridSize}`; buildBoard(); });
+    ui.densRange.addEventListener('input', ()=>{ density=Number(ui.densRange.value); ui.densityLabel.textContent=`${density}%`; if (mode==='classic') buildBoard(); });
+    ui.obstRange.addEventListener('input', ()=>{ obst=Number(ui.obstRange.value); ui.obstLabel.textContent=`${obst}%`; buildBoard(); });
+    ui.btnRoll.addEventListener('click', rollDice);
+    ui.btnNext.addEventListener('click', nextLevel);
+    ui.btnReset.addEventListener('click', resetGame);
+    ui.btnHelp.addEventListener('click', showHelp);
+    ui.modeSel.addEventListener('change', ()=>{
+      mode = ui.modeSel.value;
+      document.querySelector('.legend').style.display = (mode==='naval') ? '' : 'none';
+      ui.enemyBadge.style.display = (mode==='classic') ? '' : 'none';
+      ui.shipBadge.style.display  = (mode==='naval') ? '' : 'none';
+      ui.lblDensity.textContent = (mode==='classic') ? 'Ворог' : 'Флот (ігнорується)';
+      ui.densRange.disabled = (mode==='naval'); // в naval керує флот NAVAL_FLEET
+      buildBoard();
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if (e.key==='ArrowLeft') move(-1);
+      else if (e.key==='ArrowRight') move(1);
+      else if (e.key==='ArrowUp') move('u');
+      else if (e.key==='ArrowDown') move('d');
+      else if (e.key===' ' || e.key==='Enter') attack();
+      else if (e.key==='r'||e.key==='R') rollDice();
+      else if (e.key==='n'||e.key==='N') resetGame();
+      else if (e.key==='l'||e.key==='L') nextLevel();
+      else if (e.key==='h'||e.key==='H') showHelp();
+    });
+
+    // init
+    ui.sizeLabel.textContent=`${gridSize}×${gridSize}`;
+    ui.densityLabel.textContent=`${density}%`;
+    ui.obstLabel.textContent=`${obst}%`;
+    movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
+    buildBoard(); startTimer();
+  })();
   </script>
 </body>
 </html>
