@@ -3,368 +3,301 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ГОП — Classic + Naval (v3)</title>
-  <meta name="description" content="Демо‑гра ГОП з двома режимами: Classic (наземний) і Naval (морський з кораблями)." />
+  <title>Гра ГОП — оригінальна цифрова версія</title>
+  <meta name="description" content="Оригінальна цифрова версія національно-патріотичної настільної гри ГОП. Автор: Анатолій Панчук, Козак Гуляйвітер." />
   <style>
-    :root{ --bg:#f6f1e7; --ink:#111; --ui:#fff; --line:#dcd4c2; --gap:6px; --r:14px;
-           --a1:#ffd500; --a2:#ff2a6d; --a3:#005bbb; }
+    :root{
+      --bg:#f5efe2; --paper:#fffaf0; --ink:#17130d; --muted:#6b6253; --line:#d9ceb8;
+      --red:#b91c1c; --blue:#1d4ed8; --gold:#f2b705; --green:#15803d; --dark:#111827;
+      --p1:#2563eb; --p2:#dc2626; --p3:#16a34a; --p4:#a855f7;
+      --shadow:0 14px 35px rgba(35,25,10,.12); --r:18px;
+    }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink)}
-    .wrap{max-width:1100px; margin:0 auto; padding:20px}
-    header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
-    h1{margin:0; font-size:clamp(20px,3.6vw,34px)}
-    .ribbon{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .btn{appearance:none; border:1px solid var(--line); background:#fff; padding:10px 16px; border-radius:var(--r); cursor:pointer; font-weight:600}
-    .btn.primary{border-color:transparent; background:linear-gradient(135deg, var(--a3), var(--a2)); color:#fff}
-    .btn.warn{border-color:transparent; background:linear-gradient(135deg, var(--a2), #c2185b); color:#fff}
-    .btn.ghost{background:transparent}
-    .card{background:var(--ui); border:1px solid var(--line); border-radius:var(--r); padding:12px}
-    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .panel{display:grid; grid-template-columns:1fr; gap:12px; margin:12px 0 18px}
-    @media(min-width:780px){.panel{grid-template-columns:1fr auto}}
-    .stats{display:flex; gap:10px; flex-wrap:wrap}
-    .badge{background:#fff; border:1px solid var(--line); padding:8px 12px; border-radius:999px}
-
-    /* Поле */
-    #board{display:grid; gap:var(--gap); align-items:center; justify-items:center}
-    .cell{width:100%; aspect-ratio:1/1; border-radius:10px; border:1px solid var(--line); background:#faf8f3; position:relative}
-    .cell.token::after{content:""; position:absolute; inset:18%; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.6), rgba(0,0,0,.15)), var(--a3)}
-    .cell.obstacle{background:#eee; border-style:dashed}
-    .cell.base{outline:2px solid var(--a1)}
-    .cell.cursor{box-shadow:0 0 0 3px var(--a2) inset}
-
-    /* Naval ships visuals */
-    .cell.ship{background:#e7f1ff}
-    .cell.ship.hit{background:#ffdde5}
-    .legend{display:flex; gap:8px; flex-wrap:wrap; font-size:13px}
-    .lg{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--line); border-radius:999px; background:#fff}
-    .dot{width:12px; height:12px; border-radius:3px; background:#e7f1ff; border:1px solid #b5ccef}
-    .dot.hit{background:#ffdde5; border-color:#ff8aa1}
-
-    #log{margin-top:10px; font-size:14px}
-    footer{margin-top:18px; font-size:13px; color:#555}
-    kbd{background:#eee;border:1px solid #ccc;border-bottom-width:2px;padding:1px 6px;border-radius:6px}
-    select,input[type=range]{padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:#fff}
+    html,body{min-height:100%}
+    body{margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--ink); background:radial-gradient(circle at 20% 0%, #fff7d6 0, transparent 32%), linear-gradient(135deg,#f6eddc,#efe4cf)}
+    button,select{font:inherit}
+    .wrap{max-width:1180px; margin:0 auto; padding:20px}
+    header{display:grid; gap:12px; margin-bottom:16px}
+    .brand{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap}
+    h1{font-size:clamp(28px,5vw,54px); line-height:1; margin:0; letter-spacing:.02em}
+    .subtitle{margin:0; color:var(--muted); max-width:780px}
+    .seal{padding:10px 14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.65); font-weight:800}
+    .grid{display:grid; grid-template-columns:1fr; gap:16px}
+    @media(min-width:930px){.grid{grid-template-columns:minmax(0,1fr) 360px}}
+    .card{background:rgba(255,250,240,.92); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:16px}
+    .panel{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .btn{border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:14px; padding:10px 14px; cursor:pointer; font-weight:800}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{border-color:transparent; background:linear-gradient(135deg,var(--blue),#7c3aed); color:white}
+    .btn.danger{border-color:transparent; background:linear-gradient(135deg,var(--red),#7f1d1d); color:white}
+    .btn.gold{border-color:transparent; background:linear-gradient(135deg,var(--gold),#f97316); color:#201404}
+    .btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+    select{border:1px solid var(--line); border-radius:12px; background:#fff; padding:9px 12px; font-weight:700}
+    label{font-weight:800}
+    .board-wrap{overflow:auto; padding:8px}
+    .board{display:grid; grid-template-columns:34px repeat(6, minmax(56px,1fr)); grid-template-rows:34px repeat(6, minmax(56px,1fr)); gap:7px; min-width:430px}
+    .axis,.corner{display:grid; place-items:center; color:var(--muted); font-weight:900}
+    .cell{position:relative; display:grid; place-items:center; min-height:72px; border:2px solid var(--line); border-radius:16px; background:#fffdf7; overflow:hidden; transition:.18s ease}
+    .cell.enemy{background:linear-gradient(145deg,#2a2a2a,#050505); color:white; border-color:#111}
+    .cell.enemy::after{content:""; width:26px; height:26px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #777, #050505 62%); box-shadow:0 8px 15px rgba(0,0,0,.35)}
+    .cell.owner-1{border-color:var(--p1); background:#eff6ff}
+    .cell.owner-2{border-color:var(--p2); background:#fff1f2}
+    .cell.owner-3{border-color:var(--p3); background:#f0fdf4}
+    .cell.owner-4{border-color:var(--p4); background:#faf5ff}
+    .cell.choice{outline:4px solid var(--gold); transform:scale(1.02)}
+    .coord{position:absolute; top:6px; left:8px; font-size:12px; font-weight:900; color:var(--muted)}
+    .owner{font-size:28px; font-weight:1000}
+    .support{position:absolute; right:7px; bottom:6px; display:flex; gap:3px; flex-wrap:wrap; justify-content:flex-end; max-width:60px}
+    .mini{width:17px; height:17px; border-radius:50%; display:grid; place-items:center; color:white; font-size:10px; font-weight:900}
+    .p1{background:var(--p1)} .p2{background:var(--p2)} .p3{background:var(--p3)} .p4{background:var(--p4)}
+    .stats{display:grid; gap:8px; margin-top:12px}
+    .stat{display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px; border:1px solid var(--line); border-radius:14px; padding:9px 10px; background:#fff}
+    .name{font-weight:900}.pill{font-size:13px; color:var(--muted)}.score{font-weight:1000; font-size:20px}
+    .turn{border:2px solid var(--gold); box-shadow:0 0 0 4px rgba(242,183,5,.18)}
+    .dice{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:12px 0}
+    .die{width:52px; height:52px; display:grid; place-items:center; background:#fff; border:2px solid var(--line); border-radius:14px; font-size:26px; font-weight:1000; box-shadow:inset 0 -3px 0 rgba(0,0,0,.05)}
+    .choices{display:grid; gap:10px; grid-template-columns:1fr; margin-top:10px}
+    @media(min-width:520px){.choices{grid-template-columns:1fr 1fr}}
+    .notice{padding:12px 14px; border-radius:14px; background:#fff8d8; border:1px solid #f0d66a; font-weight:700}
+    .log{height:180px; overflow:auto; display:flex; flex-direction:column; gap:7px; padding-right:4px}
+    .log p{margin:0; padding:8px 10px; border-radius:12px; background:#fff; border:1px solid var(--line)}
+    details{margin-top:12px} summary{cursor:pointer; font-weight:1000}.rules{color:#2b2418}.rules li{margin:.35rem 0}
+    .footer{margin-top:14px; color:var(--muted); font-size:13px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>ГОП — Classic + Naval</h1>
-      <div class="ribbon">
-        <button class="btn primary" id="btn-roll">Кинути кубики</button>
-        <button class="btn" id="btn-next">Наступний рівень</button>
-        <button class="btn warn" id="btn-reset">Нова битва</button>
-        <button class="btn ghost" id="btn-help">Правила</button>
+      <div class="brand">
+        <div>
+          <h1>Гра ГОП</h1>
+          <p class="subtitle">Оригінальна цифрова версія національно-патріотичної настільної гри. Автор: Анатолій Панчук — Козак Гуляйвітер. Україна, 2021.</p>
+        </div>
+        <div class="seal">ВОЛЯ • ГРОМАДА • КОЗАЦТВО</div>
+      </div>
+      <div class="card panel">
+        <label for="players">Гравців:</label>
+        <select id="players">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+        <button class="btn primary" id="startBtn">Почати гру</button>
+        <button class="btn gold" id="rollBtn" disabled>Кинути кубики</button>
+        <button class="btn danger" id="stopBtn" disabled>Завершити достроково</button>
       </div>
     </header>
 
-    <div class="panel">
-      <div class="card">
-        <div class="row" style="justify-content:space-between">
-          <div class="stats">
-            <span class="badge">Режим: 
-              <select id="mode">
-                <option value="classic" selected>Classic</option>
-                <option value="naval">Naval (морський)</option>
-              </select>
-            </span>
-            <span class="badge">Рівень: <strong id="level">1</strong></span>
-            <span class="badge">Поле: <strong id="sizeLabel">10×10</strong></span>
-            <span class="badge" id="enemyBadge">Ворог: <strong id="densityLabel">30%</strong></span>
-            <span class="badge" id="shipBadge" style="display:none;">Кораблі: <strong id="shipLabel">22 клітин</strong></span>
-            <span class="badge">Перешкоди: <strong id="obstLabel">8%</strong></span>
-            <span class="badge">Кидок: <strong id="dice">–</strong></span>
-            <span class="badge">Кроки: <strong id="moves">0</strong></span>
-            <span class="badge">Очки: <strong id="score">0</strong></span>
-            <span class="badge">Час: <strong id="time">0:00</strong></span>
-          </div>
-          <div class="row">
-            <label>Розмір</label>
-            <select id="size">
-              <option value="8">8×8</option>
-              <option value="10" selected>10×10</option>
-              <option value="12">12×12</option>
-              <option value="14">14×14</option>
-            </select>
-            <label id="lblDensity">Ворог</label>
-            <input id="density" type="range" min="10" max="60" step="2" value="30" />
-            <label>Перешкоди</label>
-            <input id="obstacles" type="range" min="0" max="30" step="2" value="8" />
-          </div>
+    <main class="grid">
+      <section class="card">
+        <div class="notice" id="status">Натисни «Почати гру». Поле 6×6 буде заповнене 36 чорними фішками ворога.</div>
+        <div class="dice" aria-live="polite">
+          <div class="die" id="dieA">–</div>
+          <div class="die" id="dieB">–</div>
+          <strong id="diceText">Кубики ще не кинуто</strong>
         </div>
-      </div>
-      <div class="card">
-        <div class="legend"><span class="lg"><span class="dot"></span>корабель</span><span class="lg"><span class="dot hit"></span>пошкоджено</span></div>
-      </div>
-    </div>
+        <div class="choices" id="choices"></div>
+        <div class="board-wrap"><div class="board" id="board" aria-label="Поле гри ГОП 6 на 6"></div></div>
+      </section>
 
-    <div id="board" aria-label="Поле"></div>
-    <div id="log"></div>
-
-    <footer>
-      Classic: очищай фішки ворога (сусідня атака). Naval: знищуй кораблі; дальність удару = сума кубиків (Манхеттен), дубль дає +2 кроки і +5 очок.
-      Клавіатура: <kbd>↑↓←→</kbd> — рух; <kbd>Enter</kbd>/<kbd>Space</kbd> — атака; <kbd>R</kbd> — кидок; <kbd>N</kbd> — нова; <kbd>L</kbd> — рівень; <kbd>H</kbd> — правила.
-    </footer>
+      <aside class="card">
+        <h2 style="margin:0 0 8px">Рахунок</h2>
+        <div id="stats" class="stats"></div>
+        <details open>
+          <summary>Правила ГОП</summary>
+          <ol class="rules">
+            <li>На полі 6×6 лежать 36 чорних фішок ворога.</li>
+            <li>Гравець кидає два кубики: X і Y.</li>
+            <li>Гравець обирає один сектор: (X,Y) або (Y,X).</li>
+            <li>Якщо там чорна фішка — сектор звільнено, фішка переходить гравцю.</li>
+            <li>Якщо сектор уже звільнений — фішка не нараховується, контроль лишається попередньому гравцю.</li>
+            <li>Дубль 1:1, 2:2, 3:3, 4:4, 5:5 або 6:6 дає один додатковий хід.</li>
+            <li>Братерська підтримка: якщо гравець приходить на сектор іншого гравця, він ставить свою позначку поруч і отримує додатковий хід.</li>
+            <li>Перемагає той, хто звільнив найбільше секторів і зібрав найбільше фішок ворога.</li>
+          </ol>
+        </details>
+        <h2 style="margin:14px 0 8px">Літопис гри</h2>
+        <div class="log" id="log"></div>
+        <div class="footer">Ідея, структура і правила гри ГОП є авторською інтелектуальною власністю автора.</div>
+      </aside>
+    </main>
   </div>
 
-  <script>
-  (function(){
-    let mode = 'classic';
-    let gridSize = 10;
-    let density = 30;
-    let obst = 8;
-    let level = 1;
-    let score = 0;
-    let movesLeft = 0;
-    let seconds = 0; let timerId=null;
-    let cursor = 0;
+<script>
+(function(){
+  const SIZE = 6;
+  const icons = ['С','В','К','Г'];
+  let players = [];
+  let board = [];
+  let order = [];
+  let currentOrderIndex = 0;
+  let dice = null;
+  let waitingChoice = false;
+  let extraTurns = 0;
+  let gameActive = false;
 
-    // Naval specific
-    let ships = [];      // array of ship cells (Set)
-    let shipCells = new Set(); // union of all ship cells (for quick check)
-    const NAVAL_FLEET = [4,3,3,2,2,2,1,1,1,1]; // ~22 клітин (аналог морського бою)
+  const ui = {
+    players: document.getElementById('players'), startBtn: document.getElementById('startBtn'),
+    rollBtn: document.getElementById('rollBtn'), stopBtn: document.getElementById('stopBtn'),
+    board: document.getElementById('board'), stats: document.getElementById('stats'), status: document.getElementById('status'),
+    dieA: document.getElementById('dieA'), dieB: document.getElementById('dieB'), diceText: document.getElementById('diceText'),
+    choices: document.getElementById('choices'), log: document.getElementById('log')
+  };
 
-    const ui = {
-      board: document.getElementById('board'),
-      level: document.getElementById('level'),
-      sizeSel: document.getElementById('size'),
-      densRange: document.getElementById('density'),
-      obstRange: document.getElementById('obstacles'),
-      sizeLabel: document.getElementById('sizeLabel'),
-      densityLabel: document.getElementById('densityLabel'),
-      obstLabel: document.getElementById('obstLabel'),
-      shipLabel: document.getElementById('shipLabel'),
-      dice: document.getElementById('dice'),
-      moves: document.getElementById('moves'),
-      score: document.getElementById('score'),
-      time: document.getElementById('time'),
-      log: document.getElementById('log'),
-      btnRoll: document.getElementById('btn-roll'),
-      btnNext: document.getElementById('btn-next'),
-      btnReset: document.getElementById('btn-reset'),
-      btnHelp: document.getElementById('btn-help'),
-      modeSel: document.getElementById('mode'),
-      enemyBadge: document.getElementById('enemyBadge'),
-      shipBadge: document.getElementById('shipBadge'),
-      lblDensity: document.getElementById('lblDensity'),
-    };
+  function rnd(n){ return Math.floor(Math.random()*n)+1; }
+  function activePlayer(){ return players[order[currentOrderIndex]]; }
+  function playerName(p){ return `Гравець ${p.id+1}`; }
+  function coordToIndex(x,y){ return (y-1)*SIZE + (x-1); }
+  function cellName(x,y){ return `(${x},${y})`; }
 
-    function rnd(n){ return Math.floor(Math.random()*n); }
-    function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]] } }
-    function formatTime(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
+  function initBoard(){
+    board = Array.from({length:SIZE*SIZE},()=>({owner:null, supporters:[]}));
+    renderBoard();
+  }
 
-    function startTimer(){ stopTimer(); timerId=setInterval(()=>{ seconds++; ui.time.textContent=formatTime(seconds); },1000); }
-    function stopTimer(){ if (timerId) clearInterval(timerId); timerId=null; }
+  function startGame(){
+    const count = Number(ui.players.value);
+    players = Array.from({length:count},(_,i)=>({id:i, tokens:0, sectors:0, orderRoll:0}));
+    board = Array.from({length:SIZE*SIZE},()=>({owner:null, supporters:[]}));
+    players.forEach(p=>{ p.orderRoll = rnd(6)+rnd(6); });
+    order = players.map(p=>p.id).sort((a,b)=>players[b].orderRoll-players[a].orderRoll || a-b);
+    currentOrderIndex = 0; dice = null; waitingChoice = false; extraTurns = 0; gameActive = true;
+    ui.rollBtn.disabled = false; ui.stopBtn.disabled = false; ui.players.disabled = true;
+    ui.dieA.textContent = '–'; ui.dieB.textContent = '–'; ui.diceText.textContent = 'Кубики ще не кинуто'; ui.choices.innerHTML='';
+    ui.log.innerHTML='';
+    log(`Порядок ходу визначено кубиками: ${order.map(id=>`${playerName(players[id])} — ${players[id].orderRoll}`).join('; ')}.`);
+    setStatus(`${playerName(activePlayer())}: кидай кубики.`);
+    renderBoard(); renderStats();
+  }
 
-    function buildBoard(){
-      ui.board.innerHTML='';
-      ui.board.style.gridTemplateColumns = `repeat(${gridSize}, minmax(22px,1fr))`;
-      const total = gridSize*gridSize;
+  function setStatus(text){ ui.status.textContent = text; }
+  function log(text){ const p=document.createElement('p'); p.textContent=text; ui.log.prepend(p); }
 
-      const all = Array.from({length: total}, (_,i)=>i);
-      shuffle(all);
-      const baseIndex = all.pop();
-      cursor = baseIndex;
-
-      const obstCount = Math.round(total * (obst/100));
-      const obstSet = new Set(all.splice(0, obstCount));
-
-      let enemySet = new Set();
-      shipCells.clear(); ships = [];
-
-      if (mode==='classic'){
-        const enemiesCount = Math.round(total * (density/100));
-        enemySet = new Set(all.splice(0, enemiesCount));
-      } else {
-        // Place NAVAL_FLEET ships without overlap or adjacency (simple version: avoid overlap; allow adjacency diagonal)
-        const free = new Set(all);
-        const placed = [];
-        for (const len of NAVAL_FLEET){
-          let placedShip = null;
-          for (let tries=0; tries<200; tries++){
-            const horiz = Math.random()<0.5;
-            const x0 = rnd(gridSize - (horiz?len:0));
-            const y0 = rnd(gridSize - (horiz?0:len));
-            const cells = [];
-            let ok = true;
-            for (let k=0;k<len;k++){
-              const x = x0 + (horiz?k:0);
-              const y = y0 + (horiz?0:k);
-              const idx = y*gridSize + x;
-              if (!free.has(idx) || obstSet.has(idx)) { ok=false; break; }
-              cells.push(idx);
-            }
-            if (!ok) continue;
-            // mark occupied
-            for (const c of cells) free.delete(c);
-            placedShip = new Set(cells);
-            break;
-          }
-          if (placedShip){ placed.push(placedShip); for (const c of placedShip) shipCells.add(c); }
-        }
-        ships = placed;
-      }
-
-      for (let i=0;i<total;i++){
+  function renderBoard(){
+    ui.board.innerHTML = '';
+    const corner = document.createElement('div'); corner.className='corner'; corner.textContent='Y/X'; ui.board.appendChild(corner);
+    for(let x=1;x<=SIZE;x++){ const a=document.createElement('div'); a.className='axis'; a.textContent=x; ui.board.appendChild(a); }
+    for(let y=1;y<=SIZE;y++){
+      const rowAxis=document.createElement('div'); rowAxis.className='axis'; rowAxis.textContent=y; ui.board.appendChild(rowAxis);
+      for(let x=1;x<=SIZE;x++){
+        const i = coordToIndex(x,y), data = board[i];
         const el = document.createElement('div');
-        let cls = 'cell';
-        if (obstSet.has(i)) cls+=' obstacle';
-        if (mode==='classic' && enemySet.has(i)) cls+=' token';
-        if (mode==='naval' && shipCells.has(i)) cls+=' ship';
-        if (i===baseIndex) cls+=' base';
-        el.className = cls;
-        el.dataset.i = i;
+        el.className = 'cell' + (data.owner===null ? ' enemy' : ` owner-${data.owner+1}`);
+        if (waitingChoice && dice && ((x===dice.a && y===dice.b) || (x===dice.b && y===dice.a))) el.className += ' choice';
+        const c = document.createElement('div'); c.className='coord'; c.textContent = `${x},${y}`; el.appendChild(c);
+        if(data.owner!==null){
+          const owner = document.createElement('div'); owner.className = `owner p${data.owner+1}`; owner.textContent = icons[data.owner]; el.appendChild(owner);
+          if(data.supporters.length){
+            const sup = document.createElement('div'); sup.className='support';
+            data.supporters.forEach(id=>{ const m=document.createElement('span'); m.className=`mini p${id+1}`; m.textContent=icons[id]; sup.appendChild(m); });
+            el.appendChild(sup);
+          }
+        }
         ui.board.appendChild(el);
       }
-      paintCursor();
-      ui.log.textContent='';
-      if (mode==='naval') ui.shipLabel.textContent = `${shipCells.size} клітин`; 
+    }
+  }
+
+  function renderStats(){
+    ui.stats.innerHTML = '';
+    players.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'stat' + (gameActive && activePlayer() && activePlayer().id===p.id ? ' turn' : '');
+      div.innerHTML = `<span class="name"><span class="mini p${p.id+1}">${icons[p.id]}</span> ${playerName(p)}</span><span class="pill">сектори: ${p.sectors}</span><span class="score">${p.tokens}</span>`;
+      ui.stats.appendChild(div);
+    });
+  }
+
+  function rollDice(){
+    if(!gameActive) return;
+    if(waitingChoice){ setStatus('Спочатку обери сектор за поточним кидком.'); return; }
+    const a = rnd(6), b = rnd(6); dice = {a,b}; waitingChoice = true;
+    ui.dieA.textContent = a; ui.dieB.textContent = b;
+    ui.diceText.textContent = a===b ? `Дубль ${a}:${b} — буде додатковий хід.` : `Обери сектор ${cellName(a,b)} або ${cellName(b,a)}.`;
+    buildChoices(); renderBoard();
+    setStatus(`${playerName(activePlayer())}: обери сектор.`);
+  }
+
+  function buildChoices(){
+    ui.choices.innerHTML = '';
+    const pairs = [[dice.a,dice.b]];
+    if(dice.a!==dice.b) pairs.push([dice.b,dice.a]);
+    pairs.forEach(([x,y])=>{
+      const b = document.createElement('button'); b.className='btn primary'; b.textContent = `Обрати сектор ${cellName(x,y)}`;
+      b.addEventListener('click',()=>chooseSector(x,y)); ui.choices.appendChild(b);
+    });
+  }
+
+  function chooseSector(x,y){
+    if(!gameActive || !waitingChoice) return;
+    const p = activePlayer();
+    const i = coordToIndex(x,y); const cell = board[i];
+    let gainedExtra = dice.a===dice.b ? 1 : 0;
+    let message = `${playerName(p)} обрав сектор ${cellName(x,y)}. `;
+
+    if(cell.owner===null){
+      cell.owner = p.id; p.tokens++; p.sectors++;
+      message += 'Сектор звільнено, чорну фішку взято.';
+    } else if(cell.owner !== p.id){
+      if(!cell.supporters.includes(p.id)) cell.supporters.push(p.id);
+      gainedExtra++;
+      message += `Це сектор ${playerName(players[cell.owner])}. Братерська підтримка: додатковий хід.`;
+    } else {
+      message += 'Це вже власний звільнений сектор. Фішка не нараховується.';
     }
 
-    function paintCursor(){
-      ui.board.querySelectorAll('.cell.cursor').forEach(n=>n.classList.remove('cursor'));
-      const node = ui.board.children[cursor];
-      if (node) node.classList.add('cursor');
-    }
+    if(dice.a===dice.b) message += ' Козацька удача: дубль дає ще один хід.';
+    log(message);
+    waitingChoice = false; dice = null; ui.choices.innerHTML='';
+    renderBoard(); renderStats();
+    if(isBoardClear()){ finishGame('Усі 36 секторів звільнено. Гру завершено.'); return; }
+    finishTurn(gainedExtra);
+  }
 
-    function move(dx){
-      if (movesLeft<=0) return;
-      const x = cursor % gridSize; const y = Math.floor(cursor / gridSize);
-      let nx=x, ny=y;
-      if (dx===1) nx=x+1; if (dx===-1) nx=x-1; if (dx==='u') ny=y-1; if (dx==='d') ny=y+1;
-      if (nx<0||ny<0||nx>=gridSize||ny>=gridSize) return;
-      const ni = ny*gridSize + nx;
-      const cell = ui.board.children[ni];
-      if (cell.classList.contains('obstacle')) return;
-      cursor = ni; movesLeft--; ui.moves.textContent=String(movesLeft);
-      paintCursor();
+  function finishTurn(gainedExtra){
+    extraTurns += gainedExtra;
+    if(extraTurns>0){
+      extraTurns--;
+      setStatus(`${playerName(activePlayer())}: додатковий хід. Кидай кубики.`);
+    } else {
+      currentOrderIndex = (currentOrderIndex + 1) % order.length;
+      setStatus(`${playerName(activePlayer())}: твій хід. Кидай кубики.`);
     }
+    ui.dieA.textContent = '–'; ui.dieB.textContent = '–'; ui.diceText.textContent = 'Кубики ще не кинуто';
+    renderStats();
+  }
 
-    function rollDice(){
-      const a = 1+rnd(6), b = 1+rnd(6); const v=a+b;
-      ui.dice.textContent = `${a} + ${b} = ${v}`;
-      movesLeft += v;
-      if (a===b){ movesLeft += 2; score += 5; ui.score.textContent=String(score); ui.log.textContent='Дубль! +2 кроки, +5 очок.'; }
-      ui.moves.textContent=String(movesLeft);
-    }
+  function isBoardClear(){ return board.every(c=>c.owner!==null); }
+  function remainingTokens(){ return board.filter(c=>c.owner===null).length; }
 
-    function attack(){
-      const i = cursor;
-      if (mode==='classic'){
-        const cell = ui.board.children[i];
-        let destroyed = false;
-        if (cell.classList.contains('token')){ cell.classList.remove('token'); destroyed=true; }
-        else {
-          for (const j of neighbors(i)){
-            const c = ui.board.children[j];
-            if (c && c.classList.contains('token')){ c.classList.remove('token'); destroyed=true; break; }
-          }
-        }
-        if (destroyed){ score++; ui.score.textContent=String(score); checkWin(); }
-      } else {
-        // Naval: ranged attack — can strike any target within distance <= lastDice (approximated by moves gained last roll)
-        // Simplify: distance budget = current movesLeft (use at most sum rolled so far). We'll allow single strike if within <= 6 (typical roll); else need to roll again.
-        const maxRange = Math.min(movesLeft, 12); // cap
-        let bestHit = -1, bestDist = 1e9;
-        for (const s of shipCells){
-          const d = manhattan(i, s);
-          if (d<=maxRange && d<bestDist){ bestDist=d; bestHit=s; }
-        }
-        if (bestHit>=0){
-          const c = ui.board.children[bestHit];
-          if (c && c.classList.contains('ship')){
-            c.classList.remove('ship'); c.classList.add('hit');
-            shipCells.delete(bestHit);
-            score += 2; // корабель цінніший
-            ui.score.textContent=String(score);
-            ui.log.textContent = `Влучив по кораблю на відстані ${bestDist}.`;
-            if (shipCells.size===0){
-              ui.log.textContent = 'Флот ворога знищено. Перемога! Тисни «Наступний рівень».';
-              stopTimer();
-            } else {
-              ui.shipLabel.textContent = `${shipCells.size} клітин`;
-            }
-          }
-        } else {
-          ui.log.textContent = 'Нема цілей у досяжності. Кинь кубики (R) або підходь ближче.';
-        }
+  function stopEarly(){
+    if(!gameActive) return;
+    const rem = remainingTokens();
+    if(rem>0){
+      for(let k=0;k<rem;k++){
+        const pid = order[(currentOrderIndex+k)%order.length];
+        players[pid].tokens++;
       }
+      log(`Гру зупинено достроково. Залишок чорних фішок (${rem}) розподілено максимально рівно між гравцями.`);
     }
+    finishGame('Гру завершено достроково.');
+  }
 
-    function neighbors(i){
-      const x=i%gridSize, y=Math.floor(i/gridSize); const r=[];
-      if (x>0) r.push(i-1); if (x<gridSize-1) r.push(i+1); if (y>0) r.push(i-gridSize); if (y<gridSize-1) r.push(i+gridSize);
-      return r;
-    }
-    function manhattan(a,b){ const ax=a%gridSize, ay=Math.floor(a/gridSize); const bx=b%gridSize, by=Math.floor(b/gridSize); return Math.abs(ax-bx)+Math.abs(ay-by); }
+  function finishGame(reason){
+    gameActive = false; waitingChoice = false; ui.rollBtn.disabled = true; ui.stopBtn.disabled = true; ui.players.disabled = false; ui.choices.innerHTML='';
+    const max = Math.max(...players.map(p=>p.tokens));
+    const winners = players.filter(p=>p.tokens===max).map(playerName).join(', ');
+    setStatus(`${reason} Переможець: ${winners}. Результат: ${max} фішок.`);
+    log(`Переможець: ${winners}. Найбільше фішок: ${max}.`);
+    renderStats(); renderBoard();
+  }
 
-    function nextLevel(){
-      level++; ui.level.textContent=String(level);
-      // scale difficulty
-      gridSize = Math.min(14, gridSize + (level%2?0:2));
-      if (mode==='classic'){ density = Math.min(60, Math.round(density + 3)); }
-      obst = Math.min(30, Math.round(obst + (level%3?1:2)));
-      syncControls();
-      seconds=0; ui.time.textContent='0:00';
-      movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
-      buildBoard();
-    }
-
-    function resetGame(){
-      level=1; score=0; seconds=0; ui.score.textContent='0'; ui.time.textContent='0:00'; ui.level.textContent='1'; ui.dice.textContent='–';
-      gridSize = Number(ui.sizeSel.value||10);
-      density = Number(ui.densRange.value||30);
-      obst    = Number(ui.obstRange.value||8);
-      movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
-      buildBoard(); startTimer();
-      ui.log.textContent='';
-    }
-
-    function baseMoveLimit(){ return gridSize + 5*level; }
-
-    function showHelp(){
-      alert(`ГОП v3\\n\\nРежими:\\n- Classic: очищай сусідні фішки ворога.\\n- Naval: знищуй кораблі (22 клітин). Удар можливий по цілі в межах Манхеттен-відстані <= сумі останніх кидків (поточні кроки). Дубль: +2 кроки, +5 очок.\\nКлавіатура: стрілки — рух; Enter/Space — атака; R — кидок; N — нова; L — рівень; H — правила.`);
-    }
-
-    // UI bindings
-    ui.sizeSel.addEventListener('change', ()=>{ gridSize=Number(ui.sizeSel.value); ui.sizeLabel.textContent=`${gridSize}×${gridSize}`; buildBoard(); });
-    ui.densRange.addEventListener('input', ()=>{ density=Number(ui.densRange.value); ui.densityLabel.textContent=`${density}%`; if (mode==='classic') buildBoard(); });
-    ui.obstRange.addEventListener('input', ()=>{ obst=Number(ui.obstRange.value); ui.obstLabel.textContent=`${obst}%`; buildBoard(); });
-    ui.btnRoll.addEventListener('click', rollDice);
-    ui.btnNext.addEventListener('click', nextLevel);
-    ui.btnReset.addEventListener('click', resetGame);
-    ui.btnHelp.addEventListener('click', showHelp);
-    ui.modeSel.addEventListener('change', ()=>{
-      mode = ui.modeSel.value;
-      document.querySelector('.legend').style.display = (mode==='naval') ? '' : 'none';
-      ui.enemyBadge.style.display = (mode==='classic') ? '' : 'none';
-      ui.shipBadge.style.display  = (mode==='naval') ? '' : 'none';
-      ui.lblDensity.textContent = (mode==='classic') ? 'Ворог' : 'Флот (ігнорується)';
-      ui.densRange.disabled = (mode==='naval'); // в naval керує флот NAVAL_FLEET
-      buildBoard();
-    });
-
-    document.addEventListener('keydown', (e)=>{
-      if (e.key==='ArrowLeft') move(-1);
-      else if (e.key==='ArrowRight') move(1);
-      else if (e.key==='ArrowUp') move('u');
-      else if (e.key==='ArrowDown') move('d');
-      else if (e.key===' ' || e.key==='Enter') attack();
-      else if (e.key==='r'||e.key==='R') rollDice();
-      else if (e.key==='n'||e.key==='N') resetGame();
-      else if (e.key==='l'||e.key==='L') nextLevel();
-      else if (e.key==='h'||e.key==='H') showHelp();
-    });
-
-    // init
-    ui.sizeLabel.textContent=`${gridSize}×${gridSize}`;
-    ui.densityLabel.textContent=`${density}%`;
-    ui.obstLabel.textContent=`${obst}%`;
-    movesLeft = baseMoveLimit(); ui.moves.textContent=String(movesLeft);
-    buildBoard(); startTimer();
-  })();
-  </script>
+  ui.startBtn.addEventListener('click', startGame);
+  ui.rollBtn.addEventListener('click', rollDice);
+  ui.stopBtn.addEventListener('click', stopEarly);
+  initBoard(); renderStats();
+})();
+</script>
 </body>
 </html>
