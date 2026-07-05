@@ -1,0 +1,2 @@
+Force GitHub Pages rebuild after selecting main/root.
+Version: GOP board visual refresh with pink/yellow/blue field.
