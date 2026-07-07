@@ -50,6 +50,16 @@
     return players.filter(p => p.position === cellIndex);
   }
 
+  function hoverChoiceClass(x,y,data,cellIndex){
+    if(!isHoveredChoice(x,y)) return '';
+    const p = activePlayer();
+    const hasBrotherPiece = playersOnCell(cellIndex).some(other => p && other.id !== p.id);
+    const isBrotherSector = p && data.owner !== null && data.owner !== p.id;
+    if(data.owner === null) return 'choice-hover-red';
+    if(isBrotherSector || hasBrotherPiece) return 'choice-hover-green';
+    return 'choice-hover-white';
+  }
+
   function addPlayerPieces(el, cellIndex){
     const here = playersOnCell(cellIndex);
     if(!here.length) return;
@@ -126,7 +136,8 @@
         const data = board[i];
         const el = addTile(`tile cell ${sectorColor(x,y)}`);
         if(waitingChoice && dice && ((x === dice.a && y === dice.b) || (x === dice.b && y === dice.a))) el.className += ' choice';
-        if(isHoveredChoice(x,y)) el.className += ' choice-hover';
+        const hoverClass = hoverChoiceClass(x,y,data,i);
+        if(hoverClass) el.className += ` ${hoverClass}`;
         const coord = document.createElement('div');
         coord.className = 'coord-main';
         coord.textContent = `${x}:${y}`;
