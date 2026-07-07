@@ -42,6 +42,31 @@
   function addTile(cls, text){ const el = document.createElement('div'); el.className = cls; if (text !== undefined) el.textContent = text; ui.board.appendChild(el); return el; }
   function addCorner(){ const el = addTile('tile corner-logo'); el.innerHTML = `<img class="flag-img" src="${FLAG_SRC}" alt="Прапор">`; }
 
+  function playersOnCell(cellIndex){
+    return players.filter(p => p.position === cellIndex);
+  }
+
+  function addPlayerPieces(el, cellIndex){
+    const here = playersOnCell(cellIndex);
+    if(!here.length) return;
+    if(here.length === 1){
+      const piece = document.createElement('div');
+      piece.className = `player-piece p${here[0].id + 1}`;
+      piece.textContent = icons[here[0].id];
+      el.appendChild(piece);
+      return;
+    }
+    const stack = document.createElement('div');
+    stack.className = `player-stack stack-${here.length}`;
+    here.forEach(p => {
+      const piece = document.createElement('div');
+      piece.className = `player-piece stacked p${p.id + 1}`;
+      piece.textContent = icons[p.id];
+      stack.appendChild(piece);
+    });
+    el.appendChild(stack);
+  }
+
   function renderPlayerInputs(){
     const count = Number(ui.playersCount.value);
     ui.playerFields.innerHTML = '';
@@ -70,7 +95,7 @@
     players = Array.from({length: count}, (_, i) => {
       const input = document.getElementById(`playerName${i}`);
       const name = (input && input.value.trim()) || defaultNames[i] || `Гравець ${i+1}`;
-      return {id: i, name, tokens: 0, sectors: 0, orderRoll: 0};
+      return {id: i, name, tokens: 0, sectors: 0, orderRoll: 0, position: null};
     });
     board = Array.from({length: SIZE * SIZE}, () => ({owner: null, supporters: []}));
     players.forEach(p => { p.orderRoll = rnd(6) + rnd(6); });
@@ -105,23 +130,8 @@
           const black = document.createElement('div');
           black.className = 'black-token';
           el.appendChild(black);
-        } else {
-          const owner = document.createElement('div');
-          owner.className = `owner-badge p${data.owner+1}`;
-          owner.textContent = icons[data.owner];
-          el.appendChild(owner);
-          if(data.supporters.length){
-            const sup = document.createElement('div');
-            sup.className = 'support';
-            data.supporters.forEach(id => {
-              const m = document.createElement('span');
-              m.className = `mini p${id+1}`;
-              m.textContent = icons[id];
-              sup.appendChild(m);
-            });
-            el.appendChild(sup);
-          }
         }
+        addPlayerPieces(el, i);
       }
       addTile('tile edge', y);
     }
@@ -145,7 +155,8 @@
       right.textContent = p.tokens;
       const meta = document.createElement('span');
       meta.className = 'pill';
-      meta.textContent = `сектори: ${p.sectors}`;
+      const posText = p.position === null ? 'ще не ходив' : `позиція: ${cellName((p.position % SIZE) + 1, Math.floor(p.position / SIZE) + 1)}`;
+      meta.textContent = `сектори: ${p.sectors}; ${posText}`;
       div.appendChild(left); div.appendChild(right); div.appendChild(meta);
       ui.stats.appendChild(div);
     });
@@ -179,17 +190,18 @@
     const p = activePlayer();
     const i = coordToIndex(x,y), cell = board[i];
     let gainedExtra = dice.a === dice.b ? 1 : 0;
-    let message = `${playerName(p)} обрав сектор ${cellName(x,y)}. `;
+    let message = `${playerName(p)} переставив фішку на сектор ${cellName(x,y)}. `;
     if(cell.owner === null){
       cell.owner = p.id; p.tokens++; p.sectors++;
-      message += 'Сектор звільнено, чорну фішку взято.';
+      message += 'Чорну фішку забрано, сектор звільнено.';
     } else if(cell.owner !== p.id){
       if(!cell.supporters.includes(p.id)) cell.supporters.push(p.id);
       gainedExtra++;
-      message += `Це сектор гравця ${playerName(players[cell.owner])}. Братерська підтримка: додатковий хід.`;
+      message += `Це вже звільнений сектор гравця ${playerName(players[cell.owner])}. Братерська підтримка: додатковий хід.`;
     } else {
-      message += 'Це вже власний звільнений сектор. Фішка не нараховується.';
+      message += 'Це вже власний звільнений сектор. Нова чорна фішка не нараховується.';
     }
+    p.position = i;
     if(dice.a === dice.b) message += ' Козацька удача: дубль дає ще один хід.';
     log(message);
     waitingChoice = false; dice = null; ui.choices.innerHTML = '';
