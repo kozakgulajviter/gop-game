@@ -12,6 +12,7 @@
   let waitingChoice = false;
   let extraTurns = 0;
   let gameActive = false;
+  let hoverChoice = null;
 
   const ui = {
     playersCount: document.getElementById('playersCount'),
@@ -41,6 +42,9 @@
   function sectorColor(x,y){ if (x === y) return 'pink'; return ((x + y) % 2 === 0) ? 'blue' : 'yellow'; }
   function addTile(cls, text){ const el = document.createElement('div'); el.className = cls; if (text !== undefined) el.textContent = text; ui.board.appendChild(el); return el; }
   function addCorner(){ const el = addTile('tile corner-logo'); el.innerHTML = `<img class="flag-img" src="${FLAG_SRC}" alt="Прапор">`; }
+  function isHoveredChoice(x,y){ return hoverChoice && hoverChoice.x === x && hoverChoice.y === y; }
+  function setHoverChoice(x,y){ hoverChoice = {x,y}; renderBoard(); }
+  function clearHoverChoice(){ hoverChoice = null; renderBoard(); }
 
   function playersOnCell(cellIndex){
     return players.filter(p => p.position === cellIndex);
@@ -100,7 +104,7 @@
     board = Array.from({length: SIZE * SIZE}, () => ({owner: null, supporters: []}));
     players.forEach(p => { p.orderRoll = rnd(6) + rnd(6); });
     order = players.map(p => p.id).sort((a,b) => players[b].orderRoll - players[a].orderRoll || a-b);
-    currentOrderIndex = 0; dice = null; waitingChoice = false; extraTurns = 0; gameActive = true;
+    currentOrderIndex = 0; dice = null; waitingChoice = false; extraTurns = 0; gameActive = true; hoverChoice = null;
     ui.rollBtn.disabled = false; ui.stopBtn.disabled = false; ui.playersCount.disabled = true;
     ui.playerFields.querySelectorAll('input').forEach(i => i.disabled = true);
     ui.dieA.textContent = '–'; ui.dieB.textContent = '–'; ui.diceText.textContent = 'Кубики ще не кинуто';
@@ -122,6 +126,7 @@
         const data = board[i];
         const el = addTile(`tile cell ${sectorColor(x,y)}`);
         if(waitingChoice && dice && ((x === dice.a && y === dice.b) || (x === dice.b && y === dice.a))) el.className += ' choice';
+        if(isHoveredChoice(x,y)) el.className += ' choice-hover';
         const coord = document.createElement('div');
         coord.className = 'coord-main';
         coord.textContent = `${x}:${y}`;
@@ -166,7 +171,7 @@
     if(!gameActive) return;
     if(waitingChoice){ setStatus('Спочатку обери сектор за поточним кидком.'); return; }
     const a = rnd(6), b = rnd(6);
-    dice = {a,b}; waitingChoice = true;
+    dice = {a,b}; waitingChoice = true; hoverChoice = null;
     ui.dieA.textContent = a; ui.dieB.textContent = b;
     ui.diceText.textContent = a === b ? `Дубль ${a}:${b} — буде додатковий хід.` : `Обери сектор ${cellName(a,b)} або ${cellName(b,a)}.`;
     buildChoices(); renderBoard(); setStatus(`${playerName(activePlayer())}: обери сектор.`);
@@ -180,6 +185,10 @@
       const b = document.createElement('button');
       b.className = 'btn primary';
       b.textContent = `Обрати сектор ${cellName(x,y)}`;
+      b.addEventListener('mouseenter', () => setHoverChoice(x,y));
+      b.addEventListener('mouseleave', clearHoverChoice);
+      b.addEventListener('focus', () => setHoverChoice(x,y));
+      b.addEventListener('blur', clearHoverChoice);
       b.addEventListener('click', () => chooseSector(x,y));
       ui.choices.appendChild(b);
     });
@@ -204,7 +213,7 @@
     p.position = i;
     if(dice.a === dice.b) message += ' Козацька удача: дубль дає ще один хід.';
     log(message);
-    waitingChoice = false; dice = null; ui.choices.innerHTML = '';
+    waitingChoice = false; dice = null; hoverChoice = null; ui.choices.innerHTML = '';
     renderBoard(); renderStats();
     if(isBoardClear()){ finishGame('Усі 36 секторів звільнено. Гру завершено.'); return; }
     finishTurn(gainedExtra);
@@ -231,7 +240,7 @@
   }
 
   function finishGame(reason){
-    gameActive = false; waitingChoice = false; ui.rollBtn.disabled = true; ui.stopBtn.disabled = true; ui.playersCount.disabled = false;
+    gameActive = false; waitingChoice = false; hoverChoice = null; ui.rollBtn.disabled = true; ui.stopBtn.disabled = true; ui.playersCount.disabled = false;
     ui.playerFields.querySelectorAll('input').forEach(i => i.disabled = false); ui.choices.innerHTML = '';
     const max = Math.max(...players.map(p => p.tokens));
     const winners = players.filter(p => p.tokens === max).map(playerName).join(', ');
