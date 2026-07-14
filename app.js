@@ -54,9 +54,8 @@
     if(!isHoveredChoice(x,y)) return '';
     const p = activePlayer();
     const hasBrotherPiece = playersOnCell(cellIndex).some(other => p && other.id !== p.id);
-    const isBrotherSector = p && data.owner !== null && data.owner !== p.id;
     if(data.owner === null) return 'choice-hover-red';
-    if(isBrotherSector || hasBrotherPiece) return 'choice-hover-green';
+    if(hasBrotherPiece) return 'choice-hover-green';
     return 'choice-hover-white';
   }
 
@@ -214,12 +213,14 @@
     if(cell.owner === null){
       cell.owner = p.id; p.tokens++; p.sectors++;
       message += 'Чорну фішку забрано, сектор звільнено.';
-    } else if(cell.owner !== p.id){
-      if(!cell.supporters.includes(p.id)) cell.supporters.push(p.id);
-      gainedExtra++;
-      message += `Це вже звільнений сектор гравця ${playerName(players[cell.owner])}. Братерська підтримка: додатковий хід.`;
     } else {
-      message += 'Це вже власний звільнений сектор. Нова чорна фішка не нараховується.';
+      const brothersHere = playersOnCell(i).filter(other => other.id !== p.id);
+      if(brothersHere.length){
+        gainedExtra++;
+        message += `У секторі стоїть побратим ${brothersHere.map(playerName).join(', ')}. Братерська підтримка: додатковий хід.`;
+      } else {
+        message += 'Сектор уже звільнений і зараз порожній. Нова чорна фішка та додатковий хід не нараховуються.';
+      }
     }
     p.position = i;
     if(dice.a === dice.b) message += ' Козацька удача: дубль дає ще один хід.';
