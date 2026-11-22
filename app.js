@@ -13,6 +13,9 @@
   let extraTurns = 0;
   let gameActive = false;
   let hoverChoice = null;
+  let computerTimer = null;
+  let turnVersion = 0;
+  const COMPUTER_DELAY = 900;
 
   const ui = {
     playersCount: document.getElementById('playersCount'),
@@ -80,6 +83,41 @@
     el.appendChild(stack);
   }
 
+  function cancelComputerTurn(){
+    clearTimeout(computerTimer); computerTimer = null; turnVersion++;
+  }
+  function computerChoice(){
+    const pairs = [[dice.a,dice.b]];
+    if(dice.a !== dice.b) pairs.push([dice.b,dice.a]);
+    const p = activePlayer();
+    const ranked = pairs.map(([x,y]) => {
+      const i = coordToIndex(x,y);
+      const score = board[i].owner === null ? 2 : playersOnCell(i).some(other => other.id !== p.id) ? 1 : 0;
+      return {x,y,score};
+    });
+    const best = Math.max(...ranked.map(c => c.score));
+    const options = ranked.filter(c => c.score === best);
+    return options[rnd(options.length)-1];
+  }
+  function scheduleComputerTurn(){
+    cancelComputerTurn();
+    if(!gameActive || activePlayer().type !== 'computer') return;
+    const version = turnVersion, id = activePlayer().id;
+    setStatus(playerName(activePlayer()) + ': комп’ютер готується кинути кубики.');
+    computerTimer = setTimeout(() => {
+      if(version !== turnVersion || !gameActive || activePlayer().id !== id) return;
+      rollDice(true);
+      if(!waitingChoice) return;
+      const choice = computerChoice();
+      const reason = choice.score === 2 ? 'забрати чорну фішку' : choice.score === 1 ? 'отримати братерську підтримку' : 'перейти до дозволеного сектора';
+      setStatus(playerName(activePlayer()) + ': обирає ' + cellName(choice.x,choice.y) + ', щоб ' + reason + '.');
+      computerTimer = setTimeout(() => {
+        if(version !== turnVersion || !gameActive || activePlayer().id !== id) return;
+        chooseSector(choice.x,choice.y,true);
+      }, COMPUTER_DELAY);
+    }, COMPUTER_DELAY);
+  }
+
   function renderPlayerInputs(){
     const count = Number(ui.playersCount.value);
     ui.playerFields.innerHTML = '';
@@ -94,6 +132,15 @@
       input.value = localStorage.getItem(`gopName${i}`) || defaultNames[i];
       input.addEventListener('input', () => localStorage.setItem(`gopName${i}`, input.value.trim()));
       label.appendChild(input);
+      const type = document.createElement('select');
+      type.id = 'playerType' + i;
+      type.setAttribute('aria-label', 'Тип гравця ' + (i+1));
+      for(const [value,text] of [['human','Людина'],['computer','Комп’ютер']]){
+        const option = document.createElement('option'); option.value=value; option.textContent=text; type.appendChild(option);
+      }
+      type.value = localStorage.getItem('gopType'+i) === 'computer' ? 'computer' : 'human';
+      type.addEventListener('change', () => localStorage.setItem('gopType'+i,type.value));
+      label.appendChild(type);
       ui.playerFields.appendChild(label);
     }
   }
@@ -104,23 +151,24 @@
   }
 
   function startGame(){
+    cancelComputerTurn();
     const count = Number(ui.playersCount.value);
     players = Array.from({length: count}, (_, i) => {
       const input = document.getElementById(`playerName${i}`);
       const name = (input && input.value.trim()) || defaultNames[i] || `Гравець ${i+1}`;
-      return {id: i, name, tokens: 0, sectors: 0, orderRoll: 0, position: null};
+      return {id: i, name, type: document.getElementById('playerType'+i).value === 'computer' ? 'computer' : 'human', tokens: 0, sectors: 0, orderRoll: 0, position: null};
     });
     board = Array.from({length: SIZE * SIZE}, () => ({owner: null, supporters: []}));
     players.forEach(p => { p.orderRoll = rnd(6) + rnd(6); });
     order = players.map(p => p.id).sort((a,b) => players[b].orderRoll - players[a].orderRoll || a-b);
     currentOrderIndex = 0; dice = null; waitingChoice = false; extraTurns = 0; gameActive = true; hoverChoice = null;
     ui.rollBtn.disabled = false; ui.stopBtn.disabled = false; ui.playersCount.disabled = true;
-    ui.playerFields.querySelectorAll('input').forEach(i => i.disabled = true);
+    ui.playerFields.querySelectorAll('input, select').forEach(i => i.disabled = true);
     ui.dieA.textContent = '–'; ui.dieB.textContent = '–'; ui.diceText.textContent = 'Кубики ще не кинуто';
     ui.choices.innerHTML = ''; ui.log.innerHTML = '';
     log(`Порядок ходу: ${order.map(id => `${playerName(players[id])} — ${players[id].orderRoll}`).join('; ')}.`);
     setStatus(`${playerName(activePlayer())}: кидай кубики.`);
-    renderBoard(); renderStats();
+    renderBoard(); renderStats(); scheduleComputerTurn();
   }
 
   function renderBoard(){
@@ -156,6 +204,7 @@
   }
 
   function renderStats(){
+    ui.rollBtn.disabled = !gameActive || waitingChoice || (activePlayer() && activePlayer().type === 'computer');
     ui.stats.innerHTML = '';
     if(!players.length){ ui.stats.innerHTML = '<div class="stat"><span class="name">Партію ще не почато</span><span class="pill">0</span></div>'; return; }
     players.forEach(p => {
@@ -164,7 +213,7 @@
       const left = document.createElement('span');
       left.className = 'name';
       left.innerHTML = `<span class="mini p${p.id+1}">${icons[p.id]}</span> `;
-      left.appendChild(document.createTextNode(playerName(p)));
+      left.appendChild(document.createTextNode(playerName(p) + (p.type === 'computer' ? ' · Комп’ютер' : '')));
       const right = document.createElement('span');
       right.className = 'score';
       right.textContent = p.tokens;
@@ -177,14 +226,14 @@
     });
   }
 
-  function rollDice(){
-    if(!gameActive) return;
+  function rollDice(byComputer = false){
+    if(!gameActive || (activePlayer().type === 'computer') !== (byComputer === true)) return;
     if(waitingChoice){ setStatus('Спочатку обери сектор за поточним кидком.'); return; }
     const a = rnd(6), b = rnd(6);
     dice = {a,b}; waitingChoice = true; hoverChoice = null;
     ui.dieA.textContent = a; ui.dieB.textContent = b;
     ui.diceText.textContent = a === b ? `Дубль ${a}:${b} — буде додатковий хід.` : `Обери сектор ${cellName(a,b)} або ${cellName(b,a)}.`;
-    buildChoices(); renderBoard(); setStatus(`${playerName(activePlayer())}: обери сектор.`);
+    buildChoices(); renderBoard(); renderStats(); setStatus(`${playerName(activePlayer())}: обери сектор.`);
   }
 
   function buildChoices(){
@@ -194,6 +243,7 @@
     pairs.forEach(([x,y]) => {
       const b = document.createElement('button');
       b.className = 'btn primary';
+      b.disabled = activePlayer().type === 'computer';
       b.textContent = `Обрати сектор ${cellName(x,y)}`;
       b.addEventListener('mouseenter', () => setHoverChoice(x,y));
       b.addEventListener('mouseleave', clearHoverChoice);
@@ -204,8 +254,9 @@
     });
   }
 
-  function chooseSector(x,y){
-    if(!gameActive || !waitingChoice) return;
+  function chooseSector(x,y,byComputer = false){
+    if(!gameActive || !waitingChoice || (activePlayer().type === 'computer') !== (byComputer === true)) return;
+    if(!((x === dice.a && y === dice.b) || (x === dice.b && y === dice.a))) return;
     const p = activePlayer();
     const i = coordToIndex(x,y), cell = board[i];
     let gainedExtra = dice.a === dice.b ? 1 : 0;
@@ -236,7 +287,7 @@
     if(extraTurns > 0){ extraTurns--; setStatus(`${playerName(activePlayer())}: додатковий хід. Кидай кубики.`); }
     else { currentOrderIndex = (currentOrderIndex + 1) % order.length; setStatus(`${playerName(activePlayer())}: твій хід. Кидай кубики.`); }
     ui.dieA.textContent = '–'; ui.dieB.textContent = '–'; ui.diceText.textContent = 'Кубики ще не кинуто';
-    renderStats();
+    renderStats(); scheduleComputerTurn();
   }
 
   function isBoardClear(){ return board.every(c => c.owner !== null); }
@@ -257,8 +308,9 @@
   }
 
   function finishGame(reason){
+    cancelComputerTurn();
     gameActive = false; waitingChoice = false; hoverChoice = null; ui.rollBtn.disabled = true; ui.stopBtn.disabled = true; ui.playersCount.disabled = false;
-    ui.playerFields.querySelectorAll('input').forEach(i => i.disabled = false); ui.choices.innerHTML = '';
+    ui.playerFields.querySelectorAll('input, select').forEach(i => i.disabled = false); ui.choices.innerHTML = '';
     const max = Math.max(...players.map(p => p.tokens));
     const leaders = players.filter(p => p.tokens === max);
     const winners = leaders.map(playerName).join(', ');
