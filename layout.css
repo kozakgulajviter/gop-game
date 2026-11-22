@@ -36,3 +36,9 @@
 .game-layout .coord-main{position:absolute;inset:0;display:grid;place-items:center;margin:0;font-size:calc(var(--cell-size,50px)*.52);line-height:1;letter-spacing:-.06em}
 .game-layout .edge{font-size:calc(var(--cell-size,50px)*.66)}
 .game-layout .player-piece{font-size:calc(var(--cell-size,50px)*.54)}
+/* Clear, centered coordinates: no outlines or shadows distorting digit shapes. */
+.game-layout .coord-main,.game-layout .edge{font-family:Arial,Helvetica,sans-serif;font-variant-numeric:lining-nums tabular-nums;font-weight:700;letter-spacing:0;text-shadow:none;-webkit-text-stroke:0;opacity:1;font-style:normal}
+.game-layout .coord-main{font-size:calc(var(--cell-size,50px)*.44);line-height:1}
+.game-layout .cell.pink .coord-main,.game-layout .cell.blue .coord-main{color:#fff200;-webkit-text-stroke:0;text-shadow:none}
+.game-layout .cell.yellow .coord-main{color:#16316c;-webkit-text-stroke:0;text-shadow:none}
+.game-layout .edge{font-size:calc(var(--cell-size,50px)*.64);line-height:1;color:#fff200}
