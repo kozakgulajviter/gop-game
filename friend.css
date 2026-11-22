@@ -1,3 +1,9 @@
 [hidden]{display:none!important}#lobby,#roomPanel{margin:18px 0}#netName,#inviteLink{display:block;width:100%;box-sizing:border-box;padding:12px;border:1px solid #c5bda8;border-radius:12px;font:inherit;margin:8px 0 14px}.net-actions{display:flex;flex-wrap:wrap;gap:10px}.net-actions .btn{width:auto}#netStatus{margin:16px 0}#netStatus.error{background:#ffe4e4;color:#821a1a}#netStatus.connected{background:#e1f7e5;color:#16542c}a.btn{display:inline-flex;align-items:center;text-decoration:none}#finishPanel{background:#fff2bb;padding:12px;border-radius:12px}#finishPanel .btn{margin:4px}#netLog{max-height:340px;overflow:auto}.game-top{position:static}#netGame .game-controls{display:flex;flex-wrap:wrap}#netGame .game-controls .btn{flex:1}#participants{white-space:pre-line}#netStats .stat{overflow-wrap:anywhere}#netChoices .btn{min-height:48px}@media(max-width:600px){.net-actions .btn{flex:1 1 45%}#netGame .game-controls .btn{flex:1 1 100%}}
 
 #opponent{display:block;width:100%;margin:8px 0 14px}
+
+/* Rings stay above tokens without covering the contents of a sector. */
+#netBoard .sector-option::after{content:'';position:absolute;inset:2px;border:2px solid white;z-index:9;pointer-events:none;box-shadow:0 0 0 1px #212121}
+#netBoard .sector-preview::after{inset:1px;border-width:4px;box-shadow:inset 0 0 0 1px #212121,0 0 0 1px #212121}
+#netChoices .btn:focus-visible{outline:3px solid #fff;outline-offset:-5px;box-shadow:0 0 0 2px #173ac5}
+@media(prefers-reduced-motion:reduce){#netBoard .tile{transition:none}}

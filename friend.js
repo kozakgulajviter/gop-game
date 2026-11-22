@@ -32,6 +32,10 @@ function connect(){
 }
 function send(type,data={}){if(!state||pending||ws?.readyState!==1){status('Зачекайте на з’єднання з кімнатою.',true);return;}pending=true;ws.send(JSON.stringify({type,id:key(),version:state.version,...data}));render();}
 function element(tag,cls,value){const e=document.createElement(tag);e.className=cls;if(value!==undefined)e.textContent=value;return e;}
+function previewSector(x,y,on){
+ const cell=ui.netBoard.querySelector('[data-sector="'+x+','+y+'"]');
+ if(cell)cell.classList.toggle('sector-preview',on);
+}
 function render(){
  if(!state)return;const online=ws?.readyState===1,both=state.players.length===2&&state.players.every(p=>p.connected),g=state.game;
  const hasBot=!!state.players[1]?.bot;ui.shareInvite.hidden=hasBot||!navigator.share;document.querySelector('label[for=inviteLink]').textContent=hasBot?'Посилання для повернення до цієї партії':'Посилання для друга';
@@ -41,14 +45,23 @@ function render(){
  ui.netRoll.disabled=!allowed||!myTurn||!!g.dice;ui.offerFinish.disabled=!allowed;
  text(ui.turnStatus,!playing?g.result:!both?'Очікуємо повернення гравця.':g.offer!==null?'Пропозиція завершення — очікуємо відповідь.':myTurn?'Ваш хід, '+g.players[you].name+'.':g.players[active].name+(state.players[active].bot?': думає…':': хід друга.'));
  text(ui.netDieA,g.dice?.[0]||'–');text(ui.netDieB,g.dice?.[1]||'–');text(ui.diceHelp,g.dice?'Оберіть сектор за кубиками.':'Кубики визначає сервер.');ui.netChoices.replaceChildren();
- if(g.dice){const [a,b]=g.dice,pairs=a===b?[[a,b]]:[[a,b],[b,a]];for(const [x,y] of pairs){const btn=element('button','btn primary','Обрати сектор ('+x+','+y+')');btn.disabled=!allowed||!myTurn;btn.onclick=()=>send('choose',{x,y});ui.netChoices.append(btn);}}
+ if(g.dice){const [a,b]=g.dice,pairs=a===b?[[a,b]]:[[a,b],[b,a]];for(const [x,y] of pairs){const btn=element('button','btn primary','Обрати сектор ('+x+','+y+')');btn.disabled=!allowed||!myTurn;btn.setAttribute('aria-controls','sector-'+x+'-'+y);
+ btn.onpointerenter=()=>{if(!btn.disabled)previewSector(x,y,true);};
+ btn.onpointerleave=()=>{if(document.activeElement!==btn)previewSector(x,y,false);};
+ btn.onfocus=()=>{if(!btn.disabled)previewSector(x,y,true);};
+ btn.onblur=()=>previewSector(x,y,false);
+ btn.onclick=()=>send('choose',{x,y});ui.netChoices.append(btn);}}
  ui.finishPanel.hidden=g.offer===null;ui.acceptFinish.hidden=g.offer===you;ui.acceptFinish.disabled=ui.rejectFinish.disabled=!online||!both||pending;text(ui.finishText,g.offer===you?'Ви запропонували завершити. Друг має підтвердити.':'Друг пропонує завершити партію та розподілити залишок фішок.');
  ui.netStats.replaceChildren();for(const p of g.players){const row=element('div','stat'+(playing&&p.id===active?' turn':''));row.append(element('span','name',p.name+(p.id===you?' (ви)':'')),element('span','score',p.tokens));ui.netStats.append(row);}
  ui.netLog.replaceChildren(...g.log.map(l=>element('p','',l)));ui.netBoard.replaceChildren();
  function tile(cls,value){const e=element('div','tile '+cls,value);ui.netBoard.append(e);return e;}
  function corner(){const e=tile('corner-logo'),img=document.createElement('img');img.className='flag-img';img.src='flag-corner.svg';img.alt='Прапор';e.append(img);}
  corner();for(let x=1;x<=6;x++)tile('edge',x);corner();
- for(let y=1;y<=6;y++){tile('edge',y);for(let x=1;x<=6;x++){const i=(y-1)*6+x-1,c=tile('cell '+(x===y?'pink':(x+y)%2===0?'blue':'yellow'));c.append(element('div','coord-main',x+':'+y));if(g.board[i]===null)c.append(element('div','black-token'));const here=g.players.filter(p=>p.position===i);const target=here.length>1?element('div','player-stack stack-'+here.length):c;if(target!==c)c.append(target);for(const p of here)target.append(element('div','player-piece '+(here.length>1?'stacked ':'')+'p'+(p.id+1),p.id===0?'С':'В'));}tile('edge',y);}corner();for(let x=1;x<=6;x++)tile('edge',x);corner();
+ for(let y=1;y<=6;y++){tile('edge',y);for(let x=1;x<=6;x++){const i=(y-1)*6+x-1,c=tile('cell '+(x===y?'pink':(x+y)%2===0?'blue':'yellow'));c.dataset.sector=x+','+y;c.id='sector-'+x+'-'+y;
+ const candidate=playing&&g.offer===null&&g.dice&&((x===g.dice[0]&&y===g.dice[1])||(x===g.dice[1]&&y===g.dice[0]));
+ if(candidate)c.classList.add('sector-option');
+ c.setAttribute('aria-label','Сектор '+x+','+y+(g.board[i]===null?' — є чорна фішка':' — чорної фішки немає'));
+ c.append(element('div','coord-main',x+':'+y));if(g.board[i]===null)c.append(element('div','black-token'));const here=g.players.filter(p=>p.position===i);const target=here.length>1?element('div','player-stack stack-'+here.length):c;if(target!==c)c.append(target);for(const p of here)target.append(element('div','player-piece '+(here.length>1?'stacked ':'')+'p'+(p.id+1),p.id===0?'С':'В'));}tile('edge',y);}corner();for(let x=1;x<=6;x++)tile('edge',x);corner();
 }
 ui.createRoom.onclick=()=>enter(true);ui.joinRoom.onclick=()=>enter(false);ui.readyBtn.onclick=()=>send('ready');ui.netRoll.onclick=()=>send('roll');ui.offerFinish.onclick=()=>send('offer');ui.acceptFinish.onclick=()=>send('accept');ui.rejectFinish.onclick=()=>send('reject');ui.reconnectBtn.onclick=()=>connect();
 ui.copyInvite.onclick=async()=>{try{await navigator.clipboard.writeText(ui.inviteLink.value);status('Посилання скопійовано. Надішліть його другу.');}catch{ui.inviteLink.focus();ui.inviteLink.select();status('Виділіть і скопіюйте посилання вручну.');}};
