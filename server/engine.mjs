@@ -31,3 +31,12 @@ export function act(g,id,cmd,roll=die){
  if(g.board.every(o=>o!==null)){finish(g);return;}
  g.extra+=extra;if(g.extra>0)g.extra--;else g.turn=(g.turn+1)%2;
 }
+
+export function botStep(g,id=1,roll=die){
+ if(g.phase!=='playing')return false;
+ if(g.offer!==null){if(g.offer!==id){act(g,id,{type:'accept'},roll);return true;}return false;}
+ if(g.order[g.turn]!==id)return false;
+ if(!g.dice){act(g,id,{type:'roll'},roll);return true;}
+ const [a,b]=g.dice,score=(x,y)=>{const i=(y-1)*6+x-1;return g.board[i]===null?2:g.players.some(p=>p.id!==id&&p.position===i)?1:0;};
+ const x=score(a,b)>=score(b,a)?a:b,y=x===a?b:a;act(g,id,{type:'choose',x,y},roll);return true;
+}

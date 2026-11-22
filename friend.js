@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const API=location.hostname==='127.0.0.1'?'http://127.0.0.1:8798':'https://ai1ok-gop-rooms.ai1okportal.workers.dev',ui=Object.fromEntries(['lobby','netName','createRoom','joinRoom','roomPanel','inviteLink','copyInvite','shareInvite','readyBtn','reconnectBtn','participants','netStatus','netGame','turnStatus','netRoll','offerFinish','netDieA','netDieB','diceHelp','netChoices','finishPanel','finishText','acceptFinish','rejectFinish','netBoard','netStats','netLog'].map(id=>[id,document.getElementById(id)]));
+const API=location.hostname==='127.0.0.1'?'http://127.0.0.1:8798':'https://ai1ok-gop-rooms.ai1okportal.workers.dev',ui=Object.fromEntries(['opponent','lobby','netName','createRoom','joinRoom','roomPanel','inviteLink','copyInvite','shareInvite','readyBtn','reconnectBtn','participants','netStatus','netGame','turnStatus','netRoll','offerFinish','netDieA','netDieB','diceHelp','netChoices','finishPanel','finishText','acceptFinish','rejectFinish','netBoard','netStats','netLog'].map(id=>[id,document.getElementById(id)]));
 const key=()=>crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
 let room=null,ws=null,state=null,you=null,pending=false,retry=null,heartbeat=null,lastPong=0,attempts=0,closed=false;
 const text=(el,value)=>el.textContent=value;
@@ -11,7 +11,7 @@ async function enter(create){
  ui.createRoom.disabled=ui.joinRoom.disabled=true;status('З’єднуємося із сервером гри…');
  try{
   const playerName=ui.netName.value.trim()||'Козак';
-  if(create){const token=key(),b=await post('/rooms',{name:playerName,token});room={...b,token,name:playerName};save();location.hash='room='+room.id+'&invite='+room.invite;}
+  if(create){const token=key(),b=await post('/rooms',{name:playerName,token,bot:ui.opponent.value==='bot'});room={...b,token,name:playerName};save();location.hash='room='+room.id+'&invite='+room.invite;}
   else{room.token=room.token||key();room.name=playerName;save();await post('/rooms/'+room.id+'/join',{name:playerName,token:room.token,invite:room.invite});}
   ui.lobby.hidden=true;ui.roomPanel.hidden=false;ui.inviteLink.value=invitation();connect();
  }catch(e){status(e.name==='AbortError'?'Сервер не відповів. Спробуйте ще раз.':e.message,true);}finally{ui.createRoom.disabled=ui.joinRoom.disabled=false;}
@@ -34,11 +34,12 @@ function send(type,data={}){if(!state||pending||ws?.readyState!==1){status('За
 function element(tag,cls,value){const e=document.createElement(tag);e.className=cls;if(value!==undefined)e.textContent=value;return e;}
 function render(){
  if(!state)return;const online=ws?.readyState===1,both=state.players.length===2&&state.players.every(p=>p.connected),g=state.game;
- text(ui.participants,state.players.map((p,i)=>(i===you?'Ви: ':'Друг: ')+p.name+' — '+(p.connected?'підключений':'немає зв’язку')+(p.ready?' · готовий':'')).join('\n'));
+ const hasBot=!!state.players[1]?.bot;ui.shareInvite.hidden=hasBot||!navigator.share;document.querySelector('label[for=inviteLink]').textContent=hasBot?'Посилання для повернення до цієї партії':'Посилання для друга';
+ text(ui.participants,state.players.map((p,i)=>(i===you?'Ви: ':(p.bot?'Автогравець: ':'Друг: '))+p.name+' — '+(p.connected?'підключений':'немає зв’язку')+(p.ready?' · готовий':'')).join('\n'));
  ui.readyBtn.hidden=!!g;ui.readyBtn.disabled=!online||pending;ui.netGame.hidden=!g;if(!g)return;
  const active=g.order[g.turn],myTurn=active===you,playing=g.phase==='playing',allowed=online&&both&&!pending&&playing&&g.offer===null;
  ui.netRoll.disabled=!allowed||!myTurn||!!g.dice;ui.offerFinish.disabled=!allowed;
- text(ui.turnStatus,!playing?g.result:!both?'Очікуємо повернення гравця.':g.offer!==null?'Пропозиція завершення — очікуємо відповідь.':myTurn?'Ваш хід, '+g.players[you].name+'.':g.players[active].name+': хід друга.');
+ text(ui.turnStatus,!playing?g.result:!both?'Очікуємо повернення гравця.':g.offer!==null?'Пропозиція завершення — очікуємо відповідь.':myTurn?'Ваш хід, '+g.players[you].name+'.':g.players[active].name+(state.players[active].bot?': думає…':': хід друга.'));
  text(ui.netDieA,g.dice?.[0]||'–');text(ui.netDieB,g.dice?.[1]||'–');text(ui.diceHelp,g.dice?'Оберіть сектор за кубиками.':'Кубики визначає сервер.');ui.netChoices.replaceChildren();
  if(g.dice){const [a,b]=g.dice,pairs=a===b?[[a,b]]:[[a,b],[b,a]];for(const [x,y] of pairs){const btn=element('button','btn primary','Обрати сектор ('+x+','+y+')');btn.disabled=!allowed||!myTurn;btn.onclick=()=>send('choose',{x,y});ui.netChoices.append(btn);}}
  ui.finishPanel.hidden=g.offer===null;ui.acceptFinish.hidden=g.offer===you;ui.acceptFinish.disabled=ui.rejectFinish.disabled=!online||!both||pending;text(ui.finishText,g.offer===you?'Ви запропонували завершити. Друг має підтвердити.':'Друг пропонує завершити партію та розподілити залишок фішок.');
@@ -54,6 +55,7 @@ ui.copyInvite.onclick=async()=>{try{await navigator.clipboard.writeText(ui.invit
 ui.shareInvite.hidden=!navigator.share;ui.shareInvite.onclick=async()=>{try{await navigator.share({title:'ГОП — зіграємо разом',url:invitation()});}catch{}};
 addEventListener('online',()=>{if(room&&!closed&&ui.lobby.hidden)connect();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&room&&!closed&&ui.lobby.hidden){if(ws?.readyState!==1||Date.now()-lastPong>55000)connect();else ws.send(JSON.stringify({type:'sync'}));}});
+if(new URLSearchParams(location.search).get('opponent')==='bot')ui.opponent.value='bot';
 const hash=new URLSearchParams(location.hash.slice(1)),id=hash.get('room'),invite=hash.get('invite');
-if(id&&invite&&/^[a-f0-9-]{36}$/.test(id)&&/^[a-f0-9]{64}$/.test(invite)){try{room=JSON.parse(localStorage.getItem('gopRoom:'+id)||'null');}catch{}if(!room||room.invite!==invite)room={id,invite};ui.createRoom.hidden=true;ui.joinRoom.hidden=false;ui.netName.value=room.name||'';status(room.token?'Ваше місце збережено. Натисніть «Приєднатися» для повернення.':'Вас запросили до гри. Вкажіть ім’я та приєднайтеся.');}
+if(id&&invite&&/^[a-f0-9-]{36}$/.test(id)&&/^[a-f0-9]{64}$/.test(invite)){try{room=JSON.parse(localStorage.getItem('gopRoom:'+id)||'null');}catch{}if(!room||room.invite!==invite)room={id,invite};ui.createRoom.hidden=true;ui.opponent.hidden=true;document.querySelector('label[for=opponent]').hidden=true;ui.joinRoom.hidden=false;ui.netName.value=room.name||'';status(room.token?'Ваше місце збережено. Натисніть «Приєднатися» для повернення.':'Вас запросили до гри. Вкажіть ім’я та приєднайтеся.');}
 })();

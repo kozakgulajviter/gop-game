@@ -1,5 +1,21 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {newGame,act} from '../server/engine.mjs';import {GopRoom} from '../server/worker.mjs';
 const fixture=()=>newGame(['A','B'],()=>1);
+import {botStep} from '../server/engine.mjs';
+test('bot chooses legal black token, then support; keeps dice and normal extra-turn rules',()=>{
+ const g=fixture();g.turn=1;g.dice=[2,3];g.board[13]=0;botStep(g);assert.equal(g.players[1].position,8);assert.equal(g.players[1].tokens,1);
+ g.turn=1;g.dice=[2,3];g.players[0].position=13;botStep(g);assert.equal(g.players[1].position,13);assert.equal(g.turn,1);
+ g.dice=[4,4];botStep(g);assert.equal(g.turn,1);assert.equal(g.players[1].tokens,2);
+});
+test('bot persists through alarm wakeups, pauses offline, resumes, accepts finish and protects seat',async()=>{
+ const h=harness();const info=await (await h.room.fetch(req('/create',{id:'bot-test',name:'Human',token,bot:true}))).json();
+ assert.equal((await h.room.fetch(req('/rooms/bot-test/join',{invite:info.invite,token:token2,name:'Intruder'}))).status,409);
+ const w=h.socket(0);await h.room.webSocketMessage(w,JSON.stringify({type:'ready',id:'e'.repeat(64),version:0}));
+ let s=h.data.get('room');assert.ok(s.game);s.game.turn=s.game.order.indexOf(1);s.game.dice=[2,3];h.data.set('room',s);
+ w.readyState=3;await h.room.alarm();assert.deepEqual(h.data.get('room'),s);
+ w.readyState=1;await new GopRoom(h.room.ctx,{}).alarm();s=h.data.get('room');assert.equal(s.game.players[1].tokens,1);assert.equal(s.game.order[s.game.turn],0);
+ w.a.last=0;await h.room.webSocketMessage(w,JSON.stringify({type:'offer',id:'f'.repeat(64),version:s.version}));await h.room.alarm();s=h.data.get('room');assert.equal(s.game.phase,'finished');assert.equal(s.game.players.reduce((n,p)=>n+p.tokens,0),36);assert.equal(s.game.board.filter(x=>x===null).length,0);
+ const version=s.version;await h.room.alarm();assert.equal(h.data.get('room').version,version);
+});
 test('36 dice pairs: legal sectors, captures and double turns',()=>{for(let a=1;a<=6;a++)for(let b=1;b<=6;b++){const g=fixture();let seq=[a,b];act(g,0,{type:'roll'},()=>seq.shift());assert.throws(()=>act(g,1,{type:'choose',x:a,y:b}));assert.throws(()=>act(g,0,{type:'choose',x:0,y:0}));act(g,0,{type:'choose',x:a,y:b});assert.equal(g.players[0].tokens,1);assert.equal(g.turn,a===b?0:1);}});
 test('brother support uses actual piece position; stacks with doubles',()=>{const g=fixture();g.board[7]=1;g.players[1].position=7;g.dice=[2,2];act(g,0,{type:'choose',x:2,y:2});assert.equal(g.extra,1);assert.equal(g.turn,0);assert.equal(g.players[0].tokens,0);});
 test('both must consent; offer freezes moves; reject resumes; draw and cleared board',()=>{const g=fixture();act(g,0,{type:'offer'});assert.throws(()=>act(g,0,{type:'accept'}));assert.throws(()=>act(g,0,{type:'roll'}));act(g,1,{type:'reject'});act(g,1,{type:'offer'});act(g,0,{type:'accept'});assert.deepEqual(g.players.map(p=>p.tokens),[18,18]);assert.equal(g.board.filter(v=>v===null).length,0);assert.match(g.result,/Нічия/);assert.throws(()=>act(g,0,{type:'roll'}));});
@@ -15,5 +31,5 @@ test('join retry, third player blocked, credentials never broadcast, version/tur
  const action={type:'roll',version:saved.version,id:'d'.repeat(64)};w.a.last=0;await h.room.webSocketMessage(w,JSON.stringify(action));const after=structuredClone(h.data.get('room'));await h.room.webSocketMessage(w,JSON.stringify(action));assert.deepEqual(h.data.get('room'),after);
  other.readyState=3;const [x,y]=after.game.dice;await send(w,'choose',{x,y});assert.deepEqual(h.data.get('room'),after);
  const restored=new GopRoom(h.room.ctx,{});other.readyState=1;await restored.webSocketMessage(other,JSON.stringify({type:'sync'}));assert.deepEqual(other.messages.at(-1).state.game,after.game);
- await h.room.alarm();assert.equal(h.data.size,0);assert.equal(w.readyState,3);
+ const expired=h.data.get('room');expired.expires=0;h.data.set('room',expired);await h.room.alarm();assert.equal(h.data.size,0);assert.equal(w.readyState,3);
 });
