@@ -245,7 +245,12 @@
     if(!gameActive) return;
     const rem = remainingTokens();
     if(rem > 0){
-      for(let k=0; k<rem; k++){ const pid = order[(currentOrderIndex + k) % order.length]; players[pid].tokens++; }
+      const remaining = board.filter(c => c.owner === null);
+      remaining.forEach((cell, k) => {
+        const pid = order[(currentOrderIndex + k) % order.length];
+        players[pid].tokens++;
+        cell.owner = pid;
+      });
       log(`Гру зупинено достроково. Залишок чорних фішок (${rem}) розподілено максимально рівно між гравцями.`);
     }
     finishGame('Гру завершено достроково.');
@@ -255,9 +260,11 @@
     gameActive = false; waitingChoice = false; hoverChoice = null; ui.rollBtn.disabled = true; ui.stopBtn.disabled = true; ui.playersCount.disabled = false;
     ui.playerFields.querySelectorAll('input').forEach(i => i.disabled = false); ui.choices.innerHTML = '';
     const max = Math.max(...players.map(p => p.tokens));
-    const winners = players.filter(p => p.tokens === max).map(playerName).join(', ');
-    setStatus(`${reason} Переможець: ${winners}. Результат: ${max} фішок.`);
-    log(`Переможець: ${winners}. Найбільше фішок: ${max}.`);
+    const leaders = players.filter(p => p.tokens === max);
+    const winners = leaders.map(playerName).join(', ');
+    const result = leaders.length > 1 ? `Нічия: ${winners}` : `Переможець: ${winners}`;
+    setStatus(`${reason} ${result}. Результат: ${max} фішок.`);
+    log(`${result}. Найбільше фішок: ${max}.`);
     saveGameHistory({date: new Date().toLocaleString('uk-UA'), reason, winners, max, players: players.map(p => ({name: playerName(p), tokens: p.tokens, sectors: p.sectors}))});
     renderStats(); renderBoard(); renderHistory();
   }
@@ -269,7 +276,9 @@
     if(!history.length){ const empty = document.createElement('div'); empty.className = 'history-row'; empty.textContent = 'Історії ще немає.'; ui.history.appendChild(empty); return; }
     history.forEach(item => {
       const row = document.createElement('div'); row.className = 'history-row';
-      const title = document.createElement('b'); title.textContent = `${item.date} — переможець: ${item.winners}`;
+      const leaders = item.players.filter(p => p.tokens === item.max);
+      const resultLabel = leaders.length > 1 ? 'Нічия' : 'Переможець';
+      const title = document.createElement('b'); title.textContent = `${item.date} — ${resultLabel}: ${item.winners}`;
       const detail = document.createElement('span'); detail.className = 'small'; detail.textContent = item.players.map(p => `${p.name}: ${p.tokens}`).join(' • ');
       row.appendChild(title); row.appendChild(detail); ui.history.appendChild(row);
     });
