@@ -28,3 +28,11 @@
  .game-layout .game-controls .btn{flex:1 1 40%;width:auto}.game-layout .net-actions .btn{width:auto}
  .game-layout .game-top{gap:6px}.game-layout .choices .btn{font-size:13px}.game-layout .stats{grid-template-columns:1fr 1fr}
 }
+
+/* Stable square tracks; labels and markers cannot change the grid geometry. */
+.game-layout .board-shell{width:var(--board-size,min(100cqw,100cqh));height:var(--board-size,auto);aspect-ratio:1}
+.game-layout .board{gap:2px;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr))}
+.game-layout .tile{min-width:0;min-height:0;transition:none;transform:none!important}
+.game-layout .coord-main{position:absolute;inset:0;display:grid;place-items:center;margin:0;font-size:calc(var(--cell-size,50px)*.52);line-height:1;letter-spacing:-.06em}
+.game-layout .edge{font-size:calc(var(--cell-size,50px)*.66)}
+.game-layout .player-piece{font-size:calc(var(--cell-size,50px)*.54)}

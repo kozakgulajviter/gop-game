@@ -2,6 +2,9 @@
  const game=document.querySelector('main.grid'),field=game.querySelector('section.card'),menu=game.querySelector('aside.card');
  document.body.classList.add('game-layout');field.classList.add('field-panel');menu.classList.add('menu-panel');
  menu.prepend(field.querySelector('.game-top'));
+ const shell=field.querySelector('.board-shell');
+ const fitBoard=()=>{const cs=getComputedStyle(field),w=field.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),h=field.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);if(w<=0||h<=0)return;const cell=Math.max(1,Math.floor((Math.min(w,h)-22)/8)),size=cell*8+22;shell.style.setProperty('--board-size',size+'px');shell.style.setProperty('--cell-size',cell+'px');};
+ new ResizeObserver(fitBoard).observe(field);fitBoard();
  function fold(node,title,open=false){const d=document.createElement('details'),s=document.createElement('summary');s.textContent=title;d.append(s,node);d.open=open;return d;}
  menu.querySelectorAll('details').forEach(d=>d.open=false);
  const log=menu.querySelector('.log');if(log){const h=log.previousElementSibling;if(h?.tagName==='H2')h.remove();menu.append(fold(log,'Історія ходів'));}

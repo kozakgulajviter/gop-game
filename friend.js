@@ -60,7 +60,7 @@ function render(){
  function tile(cls,value){const e=element('div','tile '+cls,value);ui.netBoard.append(e);return e;}
  function corner(){const e=tile('corner-logo'),img=document.createElement('img');img.className='flag-img';img.src='flag-corner.svg';img.alt='Прапор';e.append(img);}
  corner();for(let x=1;x<=6;x++)tile('edge',x);corner();
- for(let y=1;y<=6;y++){tile('edge',y);for(let x=1;x<=6;x++){const i=(y-1)*6+x-1,c=tile('cell '+(x===y?'pink':(x+y)%2===0?'blue':'yellow'));c.dataset.sector=x+','+y;c.id='sector-'+x+'-'+y;
+ for(let y=1;y<=6;y++){tile('edge',y);for(let x=1;x<=6;x++){const i=(y-1)*6+x-1,c=tile('cell '+(x===y?'pink':(x+y)%2===0?'blue':'yellow'));c.dataset.sector=x+','+y;c.dataset.hasToken=String(g.board[i]===null);c.id='sector-'+x+'-'+y;
  const candidate=playing&&g.offer===null&&g.dice&&((x===g.dice[0]&&y===g.dice[1])||(x===g.dice[1]&&y===g.dice[0]));
  if(candidate)c.classList.add('sector-option');
  if(preview?.x===x&&preview?.y===y)c.classList.add('bot-preview');
