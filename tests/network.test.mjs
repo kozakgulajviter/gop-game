@@ -1,10 +1,19 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {newGame,act} from '../server/engine.mjs';import {GopRoom} from '../server/worker.mjs';
 const fixture=()=>newGame(['A','B'],()=>1);
 import {botStep} from '../server/engine.mjs';
+test('bot preview keeps token for 1200ms, records capture, and extra turn keeps last marker',()=>{
+ const g=fixture();g.turn=1;g.dice=[3,3];assert.equal(botStep(g,1,undefined,1000),true);
+ assert.deepEqual(g.botPreview,{x:3,y:3,readyAt:2200});assert.equal(g.board[14],null);assert.equal(g.players[1].tokens,0);
+ assert.equal(botStep(g,1,undefined,2199),false);assert.equal(g.board[14],null);
+ botStep(g,1,undefined,2200);assert.equal(g.players[1].tokens,1);assert.equal(g.turn,1);assert.equal(g.lastBotMove.captured,true);assert.equal(g.botPreview,null);
+ botStep(g,1,()=>3,3400);botStep(g,1,undefined,4600);assert.equal(g.lastBotMove.captured,true);
+ botStep(g,1,undefined,5800);assert.equal(g.lastBotMove.captured,false);assert.equal(g.players[1].tokens,1);
+ act(g,0,{type:'offer'});botStep(g,1);assert.equal(g.botPreview,null);assert.equal(g.phase,'finished');
+});
 test('bot chooses legal black token, then support; keeps dice and normal extra-turn rules',()=>{
- const g=fixture();g.turn=1;g.dice=[2,3];g.board[13]=0;botStep(g);assert.equal(g.players[1].position,8);assert.equal(g.players[1].tokens,1);
- g.turn=1;g.dice=[2,3];g.players[0].position=13;botStep(g);assert.equal(g.players[1].position,13);assert.equal(g.turn,1);
- g.dice=[4,4];botStep(g);assert.equal(g.turn,1);assert.equal(g.players[1].tokens,2);
+ const g=fixture();g.turn=1;g.dice=[2,3];g.board[13]=0;botStep(g);botStep(g,1,undefined,g.botPreview.readyAt);assert.equal(g.players[1].position,8);assert.equal(g.players[1].tokens,1);
+ g.turn=1;g.dice=[2,3];g.players[0].position=13;botStep(g);botStep(g,1,undefined,g.botPreview.readyAt);assert.equal(g.players[1].position,13);assert.equal(g.turn,1);
+ g.dice=[4,4];botStep(g);botStep(g,1,undefined,g.botPreview.readyAt);assert.equal(g.turn,1);assert.equal(g.players[1].tokens,2);
 });
 test('bot persists through alarm wakeups, pauses offline, resumes, accepts finish and protects seat',async()=>{
  const h=harness();const info=await (await h.room.fetch(req('/create',{id:'bot-test',name:'Human',token,bot:true}))).json();
@@ -12,7 +21,7 @@ test('bot persists through alarm wakeups, pauses offline, resumes, accepts finis
  const w=h.socket(0);await h.room.webSocketMessage(w,JSON.stringify({type:'ready',id:'e'.repeat(64),version:0}));
  let s=h.data.get('room');assert.ok(s.game);s.game.turn=s.game.order.indexOf(1);s.game.dice=[2,3];h.data.set('room',s);
  w.readyState=3;await h.room.alarm();assert.deepEqual(h.data.get('room'),s);
- w.readyState=1;await new GopRoom(h.room.ctx,{}).alarm();s=h.data.get('room');assert.equal(s.game.players[1].tokens,1);assert.equal(s.game.order[s.game.turn],0);
+ w.readyState=1;await new GopRoom(h.room.ctx,{}).alarm();s=h.data.get('room');assert.ok(s.game.botPreview);s.game.botPreview.readyAt=0;h.data.set('room',s);await h.room.alarm();s=h.data.get('room');assert.equal(s.game.players[1].tokens,1);assert.equal(s.game.order[s.game.turn],0);
  w.a.last=0;await h.room.webSocketMessage(w,JSON.stringify({type:'offer',id:'f'.repeat(64),version:s.version}));await h.room.alarm();s=h.data.get('room');assert.equal(s.game.phase,'finished');assert.equal(s.game.players.reduce((n,p)=>n+p.tokens,0),36);assert.equal(s.game.board.filter(x=>x===null).length,0);
  const version=s.version;await h.room.alarm();assert.equal(h.data.get('room').version,version);
 });

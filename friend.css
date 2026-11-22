@@ -7,3 +7,8 @@
 #netBoard .sector-preview::after{inset:1px;border-width:4px;box-shadow:inset 0 0 0 1px #212121,0 0 0 1px #212121}
 #netChoices .btn:focus-visible{outline:3px solid #fff;outline-offset:-5px;box-shadow:0 0 0 2px #173ac5}
 @media(prefers-reduced-motion:reduce){#netBoard .tile{transition:none}}
+
+#netBoard .bot-preview::after{content:'';position:absolute;inset:1px;border:4px solid #fff;box-shadow:inset 0 0 0 1px #171717,0 0 0 1px #171717;z-index:10;pointer-events:none}
+#netBoard .bot-last{box-shadow:inset 0 0 0 3px #fff}
+.bot-last-badge{position:absolute;right:0;bottom:0;background:#fff;color:#102a70;padding:0 2px;font-size:10px;font-weight:900;line-height:1.2;z-index:11;pointer-events:none}
+#botMoveNote{background:#e7f1ff;border-color:#8cb5ee;font-size:13px}

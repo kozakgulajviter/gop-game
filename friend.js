@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const API=location.hostname==='127.0.0.1'?'http://127.0.0.1:8798':'https://ai1ok-gop-rooms.ai1okportal.workers.dev',ui=Object.fromEntries(['opponent','lobby','netName','createRoom','joinRoom','roomPanel','inviteLink','copyInvite','shareInvite','readyBtn','reconnectBtn','participants','netStatus','netGame','turnStatus','netRoll','offerFinish','netDieA','netDieB','diceHelp','netChoices','finishPanel','finishText','acceptFinish','rejectFinish','netBoard','netStats','netLog'].map(id=>[id,document.getElementById(id)]));
+const API=location.hostname==='127.0.0.1'?'http://127.0.0.1:8798':'https://ai1ok-gop-rooms.ai1okportal.workers.dev',ui=Object.fromEntries(['opponent','lobby','netName','createRoom','joinRoom','roomPanel','inviteLink','copyInvite','shareInvite','readyBtn','reconnectBtn','participants','netStatus','netGame','turnStatus','botMoveNote','netRoll','offerFinish','netDieA','netDieB','diceHelp','netChoices','finishPanel','finishText','acceptFinish','rejectFinish','netBoard','netStats','netLog'].map(id=>[id,document.getElementById(id)]));
 const key=()=>crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
 let room=null,ws=null,state=null,you=null,pending=false,retry=null,heartbeat=null,lastPong=0,attempts=0,closed=false;
 const text=(el,value)=>el.textContent=value;
@@ -44,6 +44,9 @@ function render(){
  const active=g.order[g.turn],myTurn=active===you,playing=g.phase==='playing',allowed=online&&both&&!pending&&playing&&g.offer===null;
  ui.netRoll.disabled=!allowed||!myTurn||!!g.dice;ui.offerFinish.disabled=!allowed;
  text(ui.turnStatus,!playing?g.result:!both?'Очікуємо повернення гравця.':g.offer!==null?'Пропозиція завершення — очікуємо відповідь.':myTurn?'Ваш хід, '+g.players[you].name+'.':g.players[active].name+(state.players[active].bot?': думає…':': хід друга.'));
+ const preview=playing&&g.offer===null?g.botPreview:null;
+ ui.botMoveNote.hidden=!hasBot||(!preview&&!g.lastBotMove);
+ text(ui.botMoveNote,preview?'Комп’ютер обирає сектор ('+preview.x+','+preview.y+') — зараз зробить хід.':g.lastBotMove?'Останній хід комп’ютера: '+g.lastBotMove.message:'');
  text(ui.netDieA,g.dice?.[0]||'–');text(ui.netDieB,g.dice?.[1]||'–');text(ui.diceHelp,g.dice?'Оберіть сектор за кубиками.':'Кубики визначає сервер.');ui.netChoices.replaceChildren();
  if(g.dice){const [a,b]=g.dice,pairs=a===b?[[a,b]]:[[a,b],[b,a]];for(const [x,y] of pairs){const btn=element('button','btn primary','Обрати сектор ('+x+','+y+')');btn.disabled=!allowed||!myTurn;btn.setAttribute('aria-controls','sector-'+x+'-'+y);
  btn.onpointerenter=()=>{if(!btn.disabled)previewSector(x,y,true);};
@@ -60,6 +63,8 @@ function render(){
  for(let y=1;y<=6;y++){tile('edge',y);for(let x=1;x<=6;x++){const i=(y-1)*6+x-1,c=tile('cell '+(x===y?'pink':(x+y)%2===0?'blue':'yellow'));c.dataset.sector=x+','+y;c.id='sector-'+x+'-'+y;
  const candidate=playing&&g.offer===null&&g.dice&&((x===g.dice[0]&&y===g.dice[1])||(x===g.dice[1]&&y===g.dice[0]));
  if(candidate)c.classList.add('sector-option');
+ if(preview?.x===x&&preview?.y===y)c.classList.add('bot-preview');
+ if(g.lastBotMove?.x===x&&g.lastBotMove?.y===y){c.classList.add('bot-last');const badge=element('span','bot-last-badge','ПК');badge.title='Останній хід комп’ютера';c.append(badge);}
  c.setAttribute('aria-label','Сектор '+x+','+y+(g.board[i]===null?' — є чорна фішка':' — чорної фішки немає'));
  c.append(element('div','coord-main',x+':'+y));if(g.board[i]===null)c.append(element('div','black-token'));const here=g.players.filter(p=>p.position===i);const target=here.length>1?element('div','player-stack stack-'+here.length):c;if(target!==c)c.append(target);for(const p of here)target.append(element('div','player-piece '+(here.length>1?'stacked ':'')+'p'+(p.id+1),p.id===0?'С':'В'));}tile('edge',y);}corner();for(let x=1;x<=6;x++)tile('edge',x);corner();
 }

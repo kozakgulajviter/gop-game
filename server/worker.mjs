@@ -12,7 +12,7 @@ export default {async fetch(request,env){
  if(request.method==='OPTIONS')return new Response(null,{headers:{'Access-Control-Allow-Origin':origin||'https://kozakgulajviter.github.io','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'86400'}});
  let response;
  try{
-  if(u.pathname==='/health')response=json({ok:true,version:28});
+  if(u.pathname==='/health')response=json({ok:true,version:30});
   else if(u.pathname==='/rooms'&&request.method==='POST'){
    const b=await body(request);if(!validKey(b.token))return json({error:'Неправильний ключ.'},400);
    const ip=request.headers.get('CF-Connecting-IP')||'unknown';
@@ -93,7 +93,7 @@ export class GopRoom{
  async webSocketError(ws){return this.ctx.blockConcurrencyWhile(async()=>{try{ws.close(1011);}catch{}const s=await this.ctx.storage.get('room');if(s)this.broadcast(s);});}
  async scheduleBot(s){
   const g=s.game,needed=s.players[1]?.bot&&g?.phase==='playing'&&(g.offer===0||g.order[g.turn]===1)&&this.connected(s)[0];
-  await this.ctx.storage.setAlarm(needed?Math.min(s.expires,Date.now()+700):s.expires);
+  await this.ctx.storage.setAlarm(needed?Math.min(s.expires,(g?.botPreview?.readyAt&&g.offer===null?Math.max(Date.now()+50,g.botPreview.readyAt):Date.now()+1200)):s.expires);
  }
  async alarm(){return this.ctx.blockConcurrencyWhile(async()=>{
   const s=await this.ctx.storage.get('room');
